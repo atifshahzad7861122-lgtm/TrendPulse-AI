@@ -193,7 +193,7 @@ export interface DataSource {
   slug: string;
   icon: string;
   description: string;
-  status: "Connected" | "Disconnected" | "Syncing" | "Error";
+  status: "Connected" | "Disconnected" | "Syncing" | "Error" | "Coming Soon" | "Simulated" | string;
   last_sync?: string;
   sync_frequency: string;
   records_synced: number;
@@ -229,6 +229,11 @@ export interface DataSourceConfigStatus {
     region_code: string;
     language: string;
   };
+  platforms?: Record<string, {
+    type: string;
+    status: string;
+    live: boolean;
+  }>;
   environment: string;
 }
 

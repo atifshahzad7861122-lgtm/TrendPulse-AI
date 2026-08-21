@@ -181,49 +181,78 @@ export const DataSourcesPage: React.FC = () => {
         <ErrorState message={error} onRetry={fetchSourcesAndConfig} />
       ) : (
         <div className="space-y-4">
+          {/* Transparency Info Banner */}
+          <div className="p-4 rounded-2xl bg-surface-container-low border border-primary/20 flex items-start gap-3 text-xs glass-card">
+            <span className="material-symbols-outlined text-primary text-lg shrink-0 mt-0.5">info</span>
+            <div className="space-y-1">
+              <p className="font-bold text-on-surface">
+                Production Feed Transparency & Multi-Source Architecture
+              </p>
+              <p className="text-on-surface-variant leading-relaxed">
+                <strong>YouTube Data API v3</strong> is actively integrated with real-time video engagement extraction and sentiment scoring. <strong>Instagram, TikTok, Facebook, and Daraz</strong> feeds currently run high-fidelity simulated models while enterprise OAuth/API approvals are provisioned.
+              </p>
+            </div>
+          </div>
+
           {sources.map((src) => {
-            const isConnected = src.status === "Connected";
+            const isYt = src.slug === "youtube";
+            const isConnected = isYt && src.status === "Connected";
             const isToggling = actionLoading === src.slug;
             const isSyncing = actionLoading === `sync_${src.slug}`;
-            const isYt = src.slug === "youtube";
 
             return (
               <div
                 key={src.id}
                 className={`p-6 rounded-2xl border transition-all glass-card flex flex-col md:flex-row md:items-center justify-between gap-6 ${
-                  isConnected
+                  isYt
                     ? "bg-surface-container-low border-primary/25"
-                    : "bg-surface-container-low/60 border-outline-variant/15 opacity-80"
+                    : "bg-surface-container-low/60 border-outline-variant/15 opacity-90"
                 }`}
               >
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/25 flex items-center justify-center text-primary shrink-0">
+                  <div className={`w-12 h-12 rounded-2xl border flex items-center justify-center shrink-0 ${
+                    isYt
+                      ? "bg-primary/10 border-primary/25 text-primary"
+                      : "bg-surface-container border-outline-variant/30 text-on-surface-variant"
+                  }`}>
                     <span className="material-symbols-outlined text-2xl">{src.icon}</span>
                   </div>
 
                   <div className="space-y-1">
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-2">
                       <h3 className="text-base font-bold text-on-surface">{src.name}</h3>
-                      <span
-                        className={`text-[10px] font-mono-data uppercase px-2 py-0.5 rounded border ${
-                          isConnected
-                            ? "bg-primary/10 text-primary border-primary/30"
-                            : "bg-surface-container text-on-surface-variant border-outline-variant/30"
-                        }`}
-                      >
-                        {src.status}
-                      </span>
-                      {isYt && (
-                        <span
-                          className={`text-[9px] font-label-caps uppercase px-2 py-0.5 rounded border font-semibold flex items-center gap-1 ${
-                            isYouTubeLive
-                              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-                              : "bg-amber-500/10 text-amber-400 border-amber-500/30"
-                          }`}
-                        >
-                          <span className={`w-1.5 h-1.5 rounded-full ${isYouTubeLive ? "bg-emerald-400 animate-pulse" : "bg-amber-400"}`} />
-                          {isYouTubeLive ? "LIVE DATA API V3" : "OFFLINE FALLBACK"}
-                        </span>
+
+                      {isYt ? (
+                        <>
+                          <span
+                            className={`text-[10px] font-mono-data uppercase px-2 py-0.5 rounded border ${
+                              isConnected
+                                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                                : "bg-surface-container text-on-surface-variant border-outline-variant/30"
+                            }`}
+                          >
+                            {src.status}
+                          </span>
+                          <span
+                            className={`text-[9px] font-label-caps uppercase px-2 py-0.5 rounded border font-semibold flex items-center gap-1 ${
+                              isYouTubeLive
+                                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                                : "bg-amber-500/10 text-amber-400 border-amber-500/30"
+                            }`}
+                          >
+                            <span className={`w-1.5 h-1.5 rounded-full ${isYouTubeLive ? "bg-emerald-400 animate-pulse" : "bg-amber-400"}`} />
+                            {isYouTubeLive ? "LIVE DATA API V3" : "OFFLINE FALLBACK"}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-[10px] font-mono-data uppercase px-2 py-0.5 rounded border bg-amber-500/10 text-amber-400 border-amber-500/30 font-semibold">
+                            COMING SOON
+                          </span>
+                          <span className="text-[9px] font-label-caps uppercase px-2 py-0.5 rounded border bg-surface-container text-on-surface-variant border-outline-variant/30">
+                            SIMULATED DATA
+                          </span>
+                        </>
                       )}
                     </div>
 
@@ -232,7 +261,7 @@ export const DataSourcesPage: React.FC = () => {
                     </p>
 
                     <div className="flex flex-wrap items-center gap-4 text-xs font-mono-data text-on-surface-variant pt-2">
-                      <span>Sync: {src.sync_frequency}</span>
+                      <span>Sync: {isYt ? src.sync_frequency : "Simulated"}</span>
                       <span>•</span>
                       <span>Records: {src.records_synced.toLocaleString()}</span>
                       <span>•</span>
@@ -252,38 +281,57 @@ export const DataSourcesPage: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-3 self-end md:self-center shrink-0">
-                  {isConnected && (
-                    <button
-                      onClick={() => handleSyncSource(src.slug)}
-                      disabled={isSyncing || isToggling}
-                      className="px-4 py-2.5 rounded-xl text-xs font-label-caps font-semibold bg-surface-container border border-outline-variant/30 text-on-surface hover:border-primary/40 hover:text-primary transition-all flex items-center gap-2"
-                    >
-                      {isSyncing ? (
-                        <div className="w-3.5 h-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                      ) : (
-                        <span className="material-symbols-outlined text-sm">refresh</span>
+                  {isYt ? (
+                    <>
+                      {isConnected && (
+                        <button
+                          onClick={() => handleSyncSource(src.slug)}
+                          disabled={isSyncing || isToggling}
+                          className="px-4 py-2.5 rounded-xl text-xs font-label-caps font-semibold bg-surface-container border border-outline-variant/30 text-on-surface hover:border-primary/40 hover:text-primary transition-all flex items-center gap-2"
+                        >
+                          {isSyncing ? (
+                            <div className="w-3.5 h-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <span className="material-symbols-outlined text-sm">refresh</span>
+                          )}
+                          {isSyncing ? "Ingesting..." : "Sync Now"}
+                        </button>
                       )}
-                      {isSyncing ? "Ingesting..." : "Sync Now"}
-                    </button>
-                  )}
 
-                  <button
-                    onClick={() => handleToggleConnect(src.slug, src.status)}
-                    disabled={isToggling || isSyncing}
-                    className={`px-5 py-2.5 rounded-xl text-xs font-label-caps font-semibold transition-all flex items-center gap-2 ${
-                      isConnected
-                        ? "bg-surface-container border border-error/40 text-error hover:bg-error-container/20"
-                        : "bg-primary text-on-primary hover:bg-primary-container shadow-[0_0_15px_rgba(255,182,141,0.2)]"
-                    }`}
-                  >
-                    {isToggling ? (
-                      <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                    ) : isConnected ? (
-                      "Disconnect"
-                    ) : (
-                      "Connect Source"
-                    )}
-                  </button>
+                      <button
+                        onClick={() => handleToggleConnect(src.slug, src.status)}
+                        disabled={isToggling || isSyncing}
+                        className={`px-5 py-2.5 rounded-xl text-xs font-label-caps font-semibold transition-all flex items-center gap-2 ${
+                          isConnected
+                            ? "bg-surface-container border border-error/40 text-error hover:bg-error-container/20"
+                            : "bg-primary text-on-primary hover:bg-primary-container shadow-[0_0_15px_rgba(255,182,141,0.2)]"
+                        }`}
+                      >
+                        {isToggling ? (
+                          <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                        ) : isConnected ? (
+                          "Disconnect"
+                        ) : (
+                          "Connect Source"
+                        )}
+                      </button>
+                    </>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <button
+                        disabled
+                        title="Live synchronization is disabled for simulated feeds. Real API connector scheduled for next release."
+                        className="px-4 py-2.5 rounded-xl text-xs font-label-caps font-medium bg-surface-container/50 border border-outline-variant/15 text-on-surface-variant/40 cursor-not-allowed flex items-center gap-1.5"
+                      >
+                        <span className="material-symbols-outlined text-sm">lock</span>
+                        Sync Disabled
+                      </button>
+
+                      <span className="px-3 py-2 rounded-xl text-[11px] font-label-caps text-on-surface-variant/60 bg-surface-container border border-outline-variant/20">
+                        Integration Planned
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             );

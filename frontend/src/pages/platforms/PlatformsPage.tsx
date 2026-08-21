@@ -63,20 +63,30 @@ export const PlatformsPage: React.FC = () => {
                   <div>
                     <h3 className="text-lg font-bold text-on-surface">{p.name}</h3>
                     <span className="text-xs text-on-surface-variant font-mono-data">
-                      {p.total_signals.toLocaleString()} Total Ingested Signals
+                      {p.slug === "youtube"
+                        ? `${p.total_signals.toLocaleString()} Live Ingested Signals (API v3)`
+                        : `${p.total_signals.toLocaleString()} Simulated Baseline Signals`}
                     </span>
                   </div>
                 </div>
 
-                <span
-                  className={`text-xs font-label-caps uppercase px-3 py-1 rounded-full border ${
-                    p.status === "Connected"
-                      ? "bg-primary/10 text-primary border-primary/30"
-                      : "bg-surface-container-high text-on-surface-variant border-outline-variant/30"
-                  }`}
-                >
-                  {p.status}
-                </span>
+                <div className="flex items-center gap-2">
+                  {p.slug === "youtube" ? (
+                    <span className="text-xs font-label-caps uppercase px-3 py-1 rounded-full border bg-emerald-500/10 text-emerald-400 border-emerald-500/30 font-semibold flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      CONNECTED
+                    </span>
+                  ) : (
+                    <>
+                      <span className="text-xs font-label-caps uppercase px-3 py-1 rounded-full border bg-amber-500/10 text-amber-400 border-amber-500/30 font-semibold">
+                        COMING SOON
+                      </span>
+                      <span className="hidden sm:inline-block text-[10px] font-label-caps uppercase px-2 py-0.5 rounded border bg-surface-container text-on-surface-variant border-outline-variant/30">
+                        SIMULATED
+                      </span>
+                    </>
+                  )}
+                </div>
               </div>
 
               {/* Stats Bar */}

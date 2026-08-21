@@ -39,6 +39,13 @@ def get_data_sources_config_status():
                 "region_code": settings.YOUTUBE_REGION_CODE,
                 "language": settings.YOUTUBE_LANGUAGE
             },
+            "platforms": {
+                "youtube": {"type": "real_api", "status": "CONNECTED", "live": is_yt_live},
+                "instagram": {"type": "mock", "status": "COMING_SOON", "live": False},
+                "tiktok": {"type": "mock", "status": "COMING_SOON", "live": False},
+                "facebook": {"type": "mock", "status": "COMING_SOON", "live": False},
+                "daraz": {"type": "mock", "status": "COMING_SOON", "live": False},
+            },
             "environment": settings.ENVIRONMENT
         }
     )

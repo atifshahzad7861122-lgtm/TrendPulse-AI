@@ -572,6 +572,21 @@ class InMemoryPlatformRepository(PlatformRepository):
         now = datetime.now(timezone.utc)
         platforms = [
             PlatformMetrics(
+                id="plt_youtube",
+                name="YouTube",
+                slug="youtube",
+                icon="smart_display",
+                total_signals=290000,
+                active_trends=54,
+                velocity_growth=19.5,
+                market_share=15.0,
+                status="Connected",
+                recent_spikes=[
+                    {"hashtag": "Running Gear 2026", "growth": "+240%", "signals": "88K"},
+                    {"hashtag": "Top Desk Gadgets", "growth": "+155%", "signals": "58K"}
+                ]
+            ),
+            PlatformMetrics(
                 id="plt_tiktok",
                 name="TikTok",
                 slug="tiktok",
@@ -580,7 +595,7 @@ class InMemoryPlatformRepository(PlatformRepository):
                 active_trends=142,
                 velocity_growth=48.2,
                 market_share=38.5,
-                status="Connected",
+                status="Coming Soon",
                 recent_spikes=[
                     {"hashtag": "#HydroGlow", "growth": "+420%", "signals": "184K"},
                     {"hashtag": "#RunClubAesthetic", "growth": "+210%", "signals": "92K"},
@@ -596,7 +611,7 @@ class InMemoryPlatformRepository(PlatformRepository):
                 active_trends=98,
                 velocity_growth=32.4,
                 market_share=26.0,
-                status="Connected",
+                status="Coming Soon",
                 recent_spikes=[
                     {"hashtag": "MagSnap Stand", "growth": "+195%", "signals": "112K"},
                     {"hashtag": "Neck Fan Pro", "growth": "+140%", "signals": "86K"},
@@ -612,7 +627,7 @@ class InMemoryPlatformRepository(PlatformRepository):
                 active_trends=86,
                 velocity_growth=26.8,
                 market_share=20.5,
-                status="Connected",
+                status="Coming Soon",
                 recent_spikes=[
                     {"hashtag": "#MatchaRitual", "growth": "+175%", "signals": "78K"},
                     {"hashtag": "#SunsetLampDecor", "growth": "+130%", "signals": "62K"},
@@ -620,18 +635,18 @@ class InMemoryPlatformRepository(PlatformRepository):
                 ]
             ),
             PlatformMetrics(
-                id="plt_youtube",
-                name="YouTube",
-                slug="youtube",
-                icon="smart_display",
-                total_signals=290000,
-                active_trends=54,
-                velocity_growth=19.5,
-                market_share=15.0,
-                status="Disconnected",
+                id="plt_facebook",
+                name="Facebook",
+                slug="facebook",
+                icon="group",
+                total_signals=190000,
+                active_trends=32,
+                velocity_growth=14.2,
+                market_share=10.0,
+                status="Coming Soon",
                 recent_spikes=[
-                    {"hashtag": "Running Gear 2026", "growth": "+240%", "signals": "88K"},
-                    {"hashtag": "Top Desk Gadgets", "growth": "+155%", "signals": "58K"}
+                    {"hashtag": "#LocalDropshipping", "growth": "+110%", "signals": "32K"},
+                    {"hashtag": "#P2PCommerce", "growth": "+85%", "signals": "18K"}
                 ]
             )
         ]
@@ -901,14 +916,26 @@ class InMemoryDataSourceRepository(DataSourceRepository):
         now = datetime.now(timezone.utc)
         sources = [
             DataSource(
+                id="src_youtube",
+                name="YouTube Long-form & Shorts API",
+                slug="youtube",
+                icon="smart_display",
+                description="Live video metadata, engagement velocity, and review sentiment via YouTube Data API v3.",
+                status="Connected",
+                last_sync=now - timedelta(minutes=10),
+                sync_frequency="Real-time (API v3)",
+                records_synced=290000,
+                health_score=100
+            ),
+            DataSource(
                 id="src_tiktok",
                 name="TikTok Social Intelligence",
                 slug="tiktok",
                 icon="tiktok",
-                description="Monitors video engagement, hashtag velocity, and creator mentions.",
-                status="Connected",
-                last_sync=now - timedelta(minutes=18),
-                sync_frequency="Real-time (15 min)",
+                description="Monitors video engagement, hashtag velocity, and creator mentions (Simulated Data / Real API Coming Soon).",
+                status="Coming Soon",
+                last_sync=None,
+                sync_frequency="Simulated",
                 records_synced=842150,
                 health_score=99
             ),
@@ -917,10 +944,10 @@ class InMemoryDataSourceRepository(DataSourceRepository):
                 name="Daraz Marketplace Scraper",
                 slug="daraz",
                 icon="shopping_bag",
-                description="Tracks real-time pricing, stock changes, sales velocity, and seller ratings.",
-                status="Connected",
-                last_sync=now - timedelta(minutes=32),
-                sync_frequency="Hourly",
+                description="Tracks real-time pricing, stock changes, sales velocity, and seller ratings (Simulated Data / Real API Coming Soon).",
+                status="Coming Soon",
+                last_sync=None,
+                sync_frequency="Simulated",
                 records_synced=512800,
                 health_score=97
             ),
@@ -929,36 +956,24 @@ class InMemoryDataSourceRepository(DataSourceRepository):
                 name="Instagram Trends Graph",
                 slug="instagram",
                 icon="photo_camera",
-                description="Ingests reels audio surges, lifestyle carousel trends, and brand tagging.",
-                status="Connected",
-                last_sync=now - timedelta(hours=1),
-                sync_frequency="Hourly",
+                description="Ingests reels audio surges, lifestyle carousel trends, and brand tagging (Simulated Data / Real API Coming Soon).",
+                status="Coming Soon",
+                last_sync=None,
+                sync_frequency="Simulated",
                 records_synced=420600,
                 health_score=95
-            ),
-            DataSource(
-                id="src_youtube",
-                name="YouTube Long-form & Shorts API",
-                slug="youtube",
-                icon="smart_display",
-                description="Analyzes in-depth review velocity, unboxing trends, and comment intent.",
-                status="Disconnected",
-                last_sync=None,
-                sync_frequency="Daily",
-                records_synced=0,
-                health_score=0
             ),
             DataSource(
                 id="src_facebook",
                 name="Facebook Marketplace & Groups",
                 slug="facebook",
                 icon="group",
-                description="Monitors localized buying demand and peer-to-peer commerce listings.",
-                status="Disconnected",
+                description="Monitors localized buying demand and peer-to-peer commerce listings (Simulated Data / Real API Coming Soon).",
+                status="Coming Soon",
                 last_sync=None,
-                sync_frequency="Daily",
-                records_synced=0,
-                health_score=0
+                sync_frequency="Simulated",
+                records_synced=190000,
+                health_score=90
             )
         ]
         for s in sources:
