@@ -1,0 +1,26 @@
+# Phase 2B Tasks: Real Data Connector + Production Ingestion Pipeline
+
+- [x] **Task 1: Configuration, Secret Management & Resilient HTTP Client**
+  - [x] Add `YOUTUBE_API_KEY`, `DATA_SOURCE_TIMEOUT_SECONDS`, `DATA_SOURCE_MAX_RETRIES` to `backend/app/core/config.py`
+  - [x] Update `.env.example` with documented environment variable keys
+  - [x] Create `backend/app/core/http_client.py` with exponential backoff retries, timeouts, and 429 rate limit detection
+- [x] **Task 2: Ingestion Models & Product Matching Engine**
+  - [x] Extend `backend/app/domain/signals.py` with `IngestionResult` and deduplication keys
+  - [x] Create `backend/app/domain/matching.py` with `ProductMatchingEngine` for entity resolution
+- [x] **Task 3: Production YouTube Data Connector**
+  - [x] Create `backend/app/connectors/youtube_connector.py` implementing `DataSourceConnector`
+  - [x] Implement query fetching, statistics normalization, cursor pagination, and graceful fallback
+- [x] **Task 4: Production Ingestion Pipeline with Concurrency & Post-Sync Recalculations**
+  - [x] Upgrade `backend/app/services/ingestion_service.py` to support per-source locking, deduplication, and recalculation
+  - [x] Connect ingestion output to `ProductRepository`, `ProductIntelligenceEngine`, `AlertService`, and `NotificationService`
+- [x] **Task 5: API Endpoints & Frontend Data Sources UI**
+  - [x] Update `backend/app/api/v1/endpoints/data_sources.py` with `/data-sources/{slug}/sync` and `/data-sources/sync-all`
+  - [x] Update `frontend/src/services/domainServices.ts` with `sync` and `syncAll` methods
+  - [x] Update `frontend/src/pages/data_sources/DataSourcesPage.tsx` with on-demand Sync Now and Sync All actions
+- [x] **Task 6: Comprehensive Unit & Integration Testing**
+  - [x] Create `backend/tests/test_youtube_connector.py` and `backend/tests/test_ingestion_pipeline.py`
+  - [x] Verify idempotency, deduplication, rate limit error handling, and post-sync recalculation
+  - [x] Run full pytest suite across all test modules (47 passed, 1 skipped)
+- [x] **Task 7: Frontend Verification & Spec Kit Documentation**
+  - [x] Run `npm run lint` (0 errors) and `npm run build` (Passed cleanly)
+  - [x] Update `walkthrough.md` and generate `PHASE 2B IMPLEMENTATION REPORT`

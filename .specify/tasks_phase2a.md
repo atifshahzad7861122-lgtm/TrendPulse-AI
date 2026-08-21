@@ -1,0 +1,42 @@
+# Phase 2A Tasks: Real Backend Business Logic
+
+- [x] **Task 1: Normalized Signal Model & Mock Ingestion Pipeline**
+  - [x] Create `backend/app/domain/signals.py` with `PlatformSignal` and `SignalBatch` schemas
+  - [x] Create `backend/app/connectors/base.py` and `backend/app/connectors/mock_connectors.py` (TikTok, Daraz, Instagram, YouTube, Facebook)
+  - [x] Create `backend/app/services/ingestion_service.py` to coordinate ingestion -> normalization -> validation -> repository
+- [x] **Task 2: Mathematical Scoring, Trend, Demand & Viral Engines**
+  - [x] Implement `backend/app/domain/scoring.py` (Velocity, Growth Rate, Momentum, Composite Trend Score)
+  - [x] Implement `backend/app/domain/demand.py` (Demand Signal Engine with Low/Moderate/Strong/Very Strong + numeric score)
+  - [x] Implement `backend/app/domain/viral.py` (Viral Potential Engine with Low/Moderate/High/Very High)
+  - [x] Implement `backend/app/domain/aggregation.py` (Timeframe, Category, Platform aggregations)
+- [x] **Task 3: Domain Intelligence Services Implementation**
+  - [x] Create `backend/app/services/intelligence.py` (Product Intelligence Engine)
+  - [x] Create `backend/app/services/category_service.py` (Dynamic category derivation from products)
+  - [x] Create `backend/app/services/platform_service.py` (Platform signal metrics)
+  - [x] Create `backend/app/services/dashboard_service.py` (Dynamic KPIs, area charts, live signals)
+  - [x] Create `backend/app/services/search_service.py` (Ranked product & global cross-entity search)
+  - [x] Create `backend/app/services/watchlist_service.py` (Watchlist deduplication & state sync)
+  - [x] Create `backend/app/services/alert_service.py` (Anomaly detection: velocity spikes, inventory drops)
+  - [x] Create `backend/app/services/notification_service.py` (Event dispatching for alerts, reports)
+  - [x] Create `backend/app/services/report_service.py` (Multi-stage analytical generation + CSV/JSON export)
+  - [x] Create `backend/app/services/ai_insight_service.py` (Pluggable analytical LLM summary interface)
+- [x] **Task 4: API Endpoints Integration with Real Business Logic**
+  - [x] Connect `dashboard.py` to `DashboardService`
+  - [x] Connect `products.py` to `ProductIntelligenceEngine` & `ComparisonService`
+  - [x] Connect `categories.py` to `CategoryService`
+  - [x] Connect `platforms.py` to `PlatformService`
+  - [x] Connect `reports.py` to `ReportService` (including CSV export formatting)
+  - [x] Connect `search.py` to `SearchService`
+  - [x] Connect `alerts.py` to `AlertService`
+  - [x] Connect `watchlist.py` to `WatchlistService`
+  - [x] Connect `data_sources.py` to `DataSourceService` & `IngestionPipeline`
+- [x] **Task 5: Comprehensive Unit & Integration Testing**
+  - [x] Write unit tests for Trend, Velocity, Demand, Viral, and Aggregation engines in `backend/tests/test_domain_engines.py`
+  - [x] Write integration tests for real service endpoints in `backend/tests/test_services_integration.py`
+  - [x] Verify all 38 pytest unit & integration tests pass (100% success rate)
+- [x] **Task 6: Frontend Validation & Production Build Verification**
+  - [x] Run `npm run lint` (0 errors)
+  - [x] Run `npm run build` (Clean production bundle in dist/)
+  - [x] Perform end-to-end sanity verification of data consistency
+- [x] **Task 7: Final Phase 2A Implementation Report**
+  - [x] Generate `PHASE 2A IMPLEMENTATION REPORT`

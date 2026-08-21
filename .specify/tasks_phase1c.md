@@ -1,0 +1,37 @@
+# Phase 1C QA & Validation Tasks
+
+- [x] **Task 1: Application Startup & Health Check (Steps 1)**
+  - [x] Verify FastAPI `GET /api/v1/health` returns `{"status": "ok"}`
+  - [x] Verify Frontend starts on `http://localhost:5173`
+- [x] **Task 2: Landing Page & Public Navigation QA (Step 2)**
+  - [x] Audit all navbar anchor links, CTAs, FAQ accordion toggles, mobile drawer
+- [x] **Task 3: Authentication & Onboarding Lifecycle QA (Steps 3, 4, 5, 6, 7, 8, 23)**
+  - [x] Registration validation (empty, invalid email, weak password, mismatch, terms)
+  - [x] Email verification & dev token helper
+  - [x] Workspace setup & skip flows
+  - [x] Login, JWT token storage, remember me, show/hide password
+  - [x] Protected route redirects
+  - [x] Session restore on browser refresh & clean logout
+  - [x] Forgot password & reset password flow
+- [x] **Task 4: Core Domain & Analytics Workflows QA (Steps 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22)**
+  - [x] Dashboard metrics, Recharts area charts, 7d/30d/all filters, category/platform filters
+  - [x] Products search, debounced input, sorting, category/platform filters, watchlist toggle, compare selection
+  - [x] Product detail page charts, metrics, AI narrative, related products
+  - [x] Product comparison multi-select matrix, trajectory chart, empty state handling
+  - [x] Categories & platforms metrics
+  - [x] Watchlist add/remove, search, export
+  - [x] Alerts filtering, mark read, resolve, product deep links
+  - [x] Notifications unread counts, mark read, mark all read
+  - [x] Report generation multi-stage pipeline, report detail, CSV/JSON/Print export
+  - [x] Data sources connect/disconnect toggle
+  - [x] Global search & ⌘K modal with ESC key dismiss
+  - [x] Settings save changes (profile, workspace, notifications, AI preferences, display)
+- [x] **Task 5: API Error Handling, Dead Button & Console Audit (Steps 24, 25, 26, 27, 28, 29)**
+  - [x] Verify 400/401/403/404/409/422 handling with user-friendly messages
+  - [x] Audit all buttons, links, inputs, selects for working handlers
+  - [x] Inspect console & network telemetry
+- [x] **Task 6: Automated End-to-End Golden Path Test & Pytest Expansion (Steps 30, 31)**
+  - [x] Run full automated backend pytest suite & E2E golden path script (20/20 passed)
+  - [x] Validate production build (`npm run build` passed with 0 errors)
+- [x] **Task 7: Final Phase 1C QA Report Generation**
+  - [x] Generate comprehensive `PHASE 1C QA REPORT`
