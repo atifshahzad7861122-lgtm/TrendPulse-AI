@@ -80,6 +80,7 @@ export const RegisterPage: React.FC = () => {
             type="text"
             required
             value={fullName}
+            maxLength={100}
             onChange={(e) => setFullName(e.target.value)}
             placeholder="Alex Vance"
             className="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-3.5 py-2.5 text-xs text-on-surface placeholder-on-surface-variant/40 focus:outline-none focus:border-primary transition-colors"
@@ -108,6 +109,7 @@ export const RegisterPage: React.FC = () => {
             type="password"
             required
             value={password}
+            maxLength={128}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Min 8 characters"
             className="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-3.5 py-2.5 text-xs text-on-surface placeholder-on-surface-variant/40 focus:outline-none focus:border-primary transition-colors"
@@ -122,6 +124,7 @@ export const RegisterPage: React.FC = () => {
             type="password"
             required
             value={confirmPassword}
+            maxLength={128}
             onChange={(e) => setConfirmPassword(e.target.value)}
             placeholder="Repeat password"
             className="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-3.5 py-2.5 text-xs text-on-surface placeholder-on-surface-variant/40 focus:outline-none focus:border-primary transition-colors"

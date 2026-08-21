@@ -132,6 +132,7 @@ export const ReportGenerationPage: React.FC = () => {
               type="text"
               required
               value={title}
+              maxLength={255}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Q2 Consumer Electronics & Beauty Surge Briefing"
               className="w-full bg-surface-container border border-outline-variant/30 rounded-xl px-4 py-3 text-xs text-on-surface focus:outline-none focus:border-primary transition-colors"

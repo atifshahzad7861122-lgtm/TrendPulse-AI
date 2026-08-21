@@ -92,6 +92,7 @@ export const ResetPasswordPage: React.FC = () => {
             type="password"
             required
             value={newPassword}
+            maxLength={128}
             onChange={(e) => setNewPassword(e.target.value)}
             placeholder="Min 8 characters"
             className="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-3.5 py-2.5 text-xs text-on-surface placeholder-on-surface-variant/40 focus:outline-none focus:border-primary transition-colors"
@@ -106,6 +107,7 @@ export const ResetPasswordPage: React.FC = () => {
             type="password"
             required
             value={confirmPassword}
+            maxLength={128}
             onChange={(e) => setConfirmPassword(e.target.value)}
             placeholder="Repeat new password"
             className="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-3.5 py-2.5 text-xs text-on-surface placeholder-on-surface-variant/40 focus:outline-none focus:border-primary transition-colors"

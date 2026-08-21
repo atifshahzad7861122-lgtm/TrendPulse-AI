@@ -3,7 +3,7 @@ from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field
 
 class WorkspaceSetupRequest(BaseModel):
-    name: str = Field(..., min_length=2)
+    name: str = Field(..., min_length=2, max_length=100)
     industry: str
     use_case: str
     currency: str = "USD"
@@ -62,7 +62,7 @@ class ProductFilterRequest(BaseModel):
     time_range: Optional[str] = "30d"
 
 class ReportGenerateRequest(BaseModel):
-    title: str
+    title: str = Field(..., max_length=255)
     template: str
     time_range: str
     category: Optional[str] = "All Categories"

@@ -72,6 +72,7 @@ export const CommandSearchModal: React.FC<Props> = ({ isOpen, onClose }) => {
             type="text"
             placeholder="Search products, categories, platforms, reports, alerts..."
             value={query}
+            maxLength={200}
             onChange={(e) => setQuery(e.target.value)}
             className="w-full bg-transparent text-on-surface placeholder-on-surface-variant/60 focus:outline-none font-body-md text-sm"
           />

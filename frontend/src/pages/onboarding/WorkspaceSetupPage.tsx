@@ -95,6 +95,7 @@ export const WorkspaceSetupPage: React.FC = () => {
                 type="text"
                 required
                 value={name}
+                maxLength={100}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Apex Intelligence"
                 className="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-4 py-3 text-xs text-on-surface focus:outline-none focus:border-primary transition-colors"

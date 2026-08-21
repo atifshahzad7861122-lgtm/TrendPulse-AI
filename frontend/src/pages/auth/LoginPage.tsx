@@ -85,6 +85,7 @@ export const LoginPage: React.FC = () => {
               type={showPassword ? "text" : "password"}
               required
               value={password}
+              maxLength={128}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
               className="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-3.5 py-2.5 pr-10 text-xs text-on-surface placeholder-on-surface-variant/40 focus:outline-none focus:border-primary transition-colors"

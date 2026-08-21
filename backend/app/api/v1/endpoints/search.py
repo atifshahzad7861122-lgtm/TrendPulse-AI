@@ -8,7 +8,7 @@ router = APIRouter()
 
 @router.get("", response_model=ResponseModel[SearchResponse])
 def global_search(
-    q: str = Query(..., min_length=1),
+    q: str = Query(..., min_length=1, max_length=200),
     search_service: SearchService = Depends(get_search_service)
 ):
     search_result = search_service.search(q)
