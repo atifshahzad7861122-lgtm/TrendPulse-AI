@@ -64,6 +64,7 @@ class AuthService:
         workspace_id = f"ws_{uuid.uuid4().hex[:8]}"
         verification_token = generate_random_token(16)
         now = datetime.now(timezone.utc)
+        email_verification_enabled = getattr(settings, "EMAIL_VERIFICATION_ENABLED", False)
 
         # 1. User
         new_user = User(
@@ -72,7 +73,7 @@ class AuthService:
             full_name=req.full_name,
             hashed_password=get_password_hash(req.password),
             is_active=True,
-            is_verified=False,
+            is_verified=True if not email_verification_enabled else False,
             verification_token=verification_token,
             workspace_id=workspace_id,
             role="Administrator",
@@ -179,16 +180,27 @@ class AuthService:
         )
 
 
-        # 8. Dispatch Email Verification
-        email_service.send_verification_email(req.email, verification_token)
+        # 8. Dispatch Email Verification or Direct Demo Login
+        if email_verification_enabled:
+            email_service.send_verification_email(req.email, verification_token)
+            if getattr(settings, "ENVIRONMENT", "development") == "development":
+                logger.info("[DEV ONLY] Email verification code for %s: %s", req.email, verification_token)
+            return {
+                "user_id": user_id,
+                "email": req.email,
+                "is_verified": False,
+                "email_verification_enabled": True
+            }
 
-        # Log OTP securely in development mode only
-        if getattr(settings, "ENVIRONMENT", "development") == "development":
-            logger.info("[DEV ONLY] Email verification code for %s: %s", req.email, verification_token)
-
+        # Demo Mode (EMAIL_VERIFICATION_ENABLED=False): auto-verify & issue session directly
+        access_token = create_access_token(user_id)
         return {
             "user_id": user_id,
-            "email": req.email
+            "email": req.email,
+            "is_verified": True,
+            "access_token": access_token,
+            "workspace_id": workspace_id,
+            "email_verification_enabled": False
         }
 
     def login(

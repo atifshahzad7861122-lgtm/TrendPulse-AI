@@ -49,7 +49,7 @@ import type {
 
 export const authService = {
   register: (data: { full_name: string; email: string; password: string; confirm_password: string; terms_accepted: boolean }) =>
-    api.post<{ user_id: string; email: string }>("/auth/register", data),
+    api.post<{ user_id: string; email: string; is_verified?: boolean; access_token?: string; workspace_id?: string; email_verification_enabled?: boolean }>("/auth/register", data),
 
   login: (data: { email: string; password: string; remember_me?: boolean }) =>
     api.post<{ access_token: string; user_id: string; email: string; full_name: string; is_verified: boolean; workspace_id?: string; role: string; avatar_url?: string }>("/auth/login", data),

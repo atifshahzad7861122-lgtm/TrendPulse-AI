@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { authService } from "../../services/domainServices";
+import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 
 export const RegisterPage: React.FC = () => {
@@ -13,6 +14,7 @@ export const RegisterPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const navigate = useNavigate();
+  const { setSession } = useAuth();
   const { showToast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -43,9 +45,22 @@ export const RegisterPage: React.FC = () => {
       });
 
       if (res.success && res.data) {
-        showToast("Account created! Please check your email for the verification code.", "success");
-        // Redirect to email verification page (without raw token)
-        navigate(`/verify-email?email=${encodeURIComponent(email)}`);
+        if (res.data.access_token) {
+          showToast("Account created successfully! Welcome to TrendPulse AI.", "success");
+          setSession(res.data.access_token, {
+            id: res.data.user_id,
+            email,
+            full_name: fullName,
+            is_verified: true,
+            workspace_id: res.data.workspace_id,
+            role: "Administrator",
+          });
+          navigate("/workspace-setup");
+        } else {
+          showToast("Account created! Please check your email for the verification code.", "success");
+          // Redirect to email verification page when verification is required
+          navigate(`/verify-email?email=${encodeURIComponent(email)}`);
+        }
       }
     } catch (err: any) {
       setError(err.message || "Registration failed. Please check your credentials.");

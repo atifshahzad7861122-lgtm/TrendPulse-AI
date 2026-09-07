@@ -76,3 +76,73 @@ def test_production_email_verification_strictness():
         res_success = client.post("/api/v1/auth/verify-email", json={"token": real_token})
         assert res_success.status_code == 200
         assert res_success.json()["data"]["is_verified"] is True
+
+
+def test_registration_hackathon_demo_mode():
+    """Verify that when EMAIL_VERIFICATION_ENABLED=False, registration directly issues access_token and marks user verified."""
+    from backend.app.core.config import settings
+
+    test_email = "hackathon_demo_direct@trendpulse.ai"
+
+    with patch.object(settings, "EMAIL_VERIFICATION_ENABLED", False):
+        reg_resp = client.post(
+            "/api/v1/auth/register",
+            json={
+                "full_name": "Demo Direct User",
+                "email": test_email,
+                "password": "Password123!",
+                "confirm_password": "Password123!",
+                "terms_accepted": True
+            }
+        )
+        assert reg_resp.status_code == 200
+        data = reg_resp.json()["data"]
+
+        # Direct onboarding payload returned
+        assert data["is_verified"] is True
+        assert "access_token" in data
+        assert len(data["access_token"]) > 20
+        assert data["workspace_id"] is not None
+        assert data["email_verification_enabled"] is False
+
+        # Verify database record
+        user_repo = get_user_repository()
+        user = user_repo.get_by_email(test_email)
+        assert user is not None
+        assert user.is_verified is True
+        # Architecture intact: verification_token is still created for future auditing/records
+        assert user.verification_token is not None
+
+
+def test_registration_production_mode_verification_required():
+    """Verify that when EMAIL_VERIFICATION_ENABLED=True, registration requires email verification."""
+    from backend.app.core.config import settings
+
+    test_email = "production_strict_user@trendpulse.ai"
+
+    with patch.object(settings, "EMAIL_VERIFICATION_ENABLED", True):
+        reg_resp = client.post(
+            "/api/v1/auth/register",
+            json={
+                "full_name": "Production Strict User",
+                "email": test_email,
+                "password": "Password123!",
+                "confirm_password": "Password123!",
+                "terms_accepted": True
+            }
+        )
+        assert reg_resp.status_code == 200
+        data = reg_resp.json()["data"]
+
+        # Verification required payload
+        assert data["is_verified"] is False
+        assert "access_token" not in data
+        assert data["email_verification_enabled"] is True
+
+        # Verify database record
+        user_repo = get_user_repository()
+        user = user_repo.get_by_email(test_email)
+        assert user is not None
+        assert user.is_verified is False
+        assert user.verification_token is not None
+

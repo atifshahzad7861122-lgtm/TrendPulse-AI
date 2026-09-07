@@ -17,6 +17,9 @@ class Settings(BaseSettings):
         "http://127.0.0.1:3000",
     ]
 
+    # Email & Verification Configuration (Demo/Hackathon flag)
+    EMAIL_VERIFICATION_ENABLED: bool = False
+
     # Database & Storage Backend Configuration
     DATABASE_URL: Optional[str] = None
     SUPABASE_PROJECT_ID: Optional[str] = None
