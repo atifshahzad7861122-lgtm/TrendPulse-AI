@@ -1,8 +1,10 @@
+import logging
 import uuid
 import hashlib
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any, List
 from fastapi import HTTPException, status
+from backend.app.core.config import settings
 from backend.app.core.security import (
     verify_password, get_password_hash, create_access_token, generate_random_token
 )
@@ -16,8 +18,11 @@ from backend.app.repositories.base import (
 )
 from backend.app.schemas.auth import (
     UserRegisterRequest, UserLoginRequest, TokenResponse,
-    VerifyEmailRequest, ForgotPasswordRequest, ResetPasswordRequest, UserProfileResponse
+    VerifyEmailRequest, ResendVerificationRequest, ForgotPasswordRequest, ResetPasswordRequest, UserProfileResponse
 )
+from backend.app.services.email_service import email_service
+
+logger = logging.getLogger(__name__)
 
 def _hash_token(token: str) -> str:
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
@@ -174,11 +179,16 @@ class AuthService:
         )
 
 
+        # 8. Dispatch Email Verification
+        email_service.send_verification_email(req.email, verification_token)
+
+        # Log OTP securely in development mode only
+        if getattr(settings, "ENVIRONMENT", "development") == "development":
+            logger.info("[DEV ONLY] Email verification code for %s: %s", req.email, verification_token)
+
         return {
             "user_id": user_id,
-            "email": req.email,
-            "verification_token": verification_token,
-            "dev_verification_url": f"/verify-email?token={verification_token}"
+            "email": req.email
         }
 
     def login(
@@ -260,7 +270,8 @@ class AuthService:
             full_name=user.full_name,
             is_verified=user.is_verified,
             workspace_id=user.workspace_id,
-            role=user.role
+            role=user.role,
+            avatar_url=user.avatar_url
         )
 
     def logout(
@@ -296,6 +307,10 @@ class AuthService:
         ip_address: Optional[str] = None,
         user_agent: Optional[str] = None
     ) -> Dict[str, Any]:
+        if not token or not str(token).strip():
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired verification token")
+
+        token = str(token).strip()
         now = datetime.now(timezone.utc)
         ev = self.auth_persistence.get_email_verification(token)
         user = self.users.get_by_verification_token(token) if not ev else self.users.get_by_id(ev.user_id)
@@ -311,6 +326,7 @@ class AuthService:
         user.is_verified = True
         user.verification_token = None
         self.users.update(user)
+        self.auth_persistence.invalidate_user_verifications(user.id)
 
         self.auth_persistence.record_login_event(
             LoginEvent(
@@ -331,6 +347,80 @@ class AuthService:
             "user_id": user.id,
             "is_verified": True,
             "workspace_id": user.workspace_id
+        }
+
+    def resend_verification(
+        self,
+        email: str,
+        ip_address: Optional[str] = None,
+        user_agent: Optional[str] = None
+    ) -> Dict[str, Any]:
+        now = datetime.now(timezone.utc)
+        user = self.users.get_by_email(email)
+
+        # Anti-enumeration protection: return generic success message if user doesn't exist or is already verified
+        if not user or user.is_verified:
+            self.auth_persistence.record_login_event(
+                LoginEvent(
+                    id=f"evt_{uuid.uuid4().hex[:8]}",
+                    user_id=user.id if user else None,
+                    email=email,
+                    event_type="verification_resend_ignored",
+                    ip_address=ip_address,
+                    user_agent=user_agent,
+                    metadata_json={"reason": "already_verified" if (user and user.is_verified) else "user_not_found"},
+                    created_at=now
+                )
+            )
+            return {
+                "email": email,
+                "message": "If the account exists and is unverified, a new verification code has been sent."
+            }
+
+        # 1. Invalidate previous tokens for this user
+        self.auth_persistence.invalidate_user_verifications(user.id)
+
+        # 2. Generate new secure token
+        new_token = generate_random_token(16)
+        expires_at = now + timedelta(hours=24)
+
+        # 3. Store new verification record
+        new_ev = EmailVerification(
+            id=f"ev_{uuid.uuid4().hex[:8]}",
+            user_id=user.id,
+            token=new_token,
+            expires_at=expires_at,
+            created_at=now
+        )
+        self.auth_persistence.create_email_verification(new_ev)
+
+        user.verification_token = new_token
+        self.users.update(user)
+
+        # 4. Dispatch Email Verification
+        email_service.send_verification_email(user.email, new_token)
+
+        # Log OTP securely in development mode only
+        if getattr(settings, "ENVIRONMENT", "development") == "development":
+            logger.info("[DEV ONLY] Resent email verification code for %s: %s", user.email, new_token)
+
+        # 5. Record audit event
+        self.auth_persistence.record_login_event(
+            LoginEvent(
+                id=f"evt_{uuid.uuid4().hex[:8]}",
+                user_id=user.id,
+                email=user.email,
+                event_type="verification_code_resent",
+                ip_address=ip_address,
+                user_agent=user_agent,
+                metadata_json={"verification_id": new_ev.id},
+                created_at=now
+            )
+        )
+
+        return {
+            "email": email,
+            "message": "If the account exists and is unverified, a new verification code has been sent."
         }
 
     def forgot_password(

@@ -10,6 +10,8 @@ def test_health_check():
     assert response.json() == {"status": "ok"}
 
 def test_auth_flow():
+    from backend.app.api.deps import get_user_repository
+    user_repo = get_user_repository()
     # 1. Register
     reg_payload = {
         "full_name": "Test Engineer",
@@ -21,10 +23,17 @@ def test_auth_flow():
     reg_resp = client.post("/api/v1/auth/register", json=reg_payload)
     assert reg_resp.status_code == 200
     reg_data = reg_resp.json()["data"]
-    token = reg_data["verification_token"]
+    assert "verification_token" not in reg_data
+    assert "dev_verification_url" not in reg_data
+    assert reg_data["email"] == "tester@trendpulse.ai"
+
+    # 2. Retrieve code securely from persistence (simulating user reading email)
+    user = user_repo.get_by_email("tester@trendpulse.ai")
+    assert user is not None
+    token = user.verification_token
     assert token is not None
 
-    # 2. Verify Email
+    # 3. Verify Email
     ver_resp = client.post("/api/v1/auth/verify-email", json={"token": token})
     assert ver_resp.status_code == 200
     assert ver_resp.json()["data"]["is_verified"] is True

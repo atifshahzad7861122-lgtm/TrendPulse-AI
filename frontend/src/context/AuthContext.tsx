@@ -11,6 +11,7 @@ interface AuthContextType {
   logout: () => void;
   setSession: (token: string, user: User) => void;
   refreshProfile: () => Promise<void>;
+  updateUser: (partialUser: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -25,6 +26,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setToken(newToken);
     setUser(newUser);
   };
+
+  const updateUser = useCallback((partialUser: Partial<User>) => {
+    setUser((prev) => (prev ? { ...prev, ...partialUser } : null));
+  }, []);
 
   const logout = () => {
     localStorage.removeItem("trendpulse_token");
@@ -71,6 +76,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         is_verified: data.is_verified,
         workspace_id: data.workspace_id,
         role: data.role,
+        avatar_url: data.avatar_url,
       });
     }
   };
@@ -90,6 +96,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         logout,
         setSession,
         refreshProfile,
+        updateUser,
       }}
     >
       {children}

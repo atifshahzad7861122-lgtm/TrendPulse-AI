@@ -15,12 +15,23 @@ import { WorkspaceSetupPage } from "./pages/onboarding/WorkspaceSetupPage";
 
 // Protected App Pages
 import { DashboardPage } from "./pages/dashboard/DashboardPage";
+import { MarketIntelligenceDashboard } from "./pages/dashboard/MarketIntelligenceDashboard";
 import { ProductListPage } from "./pages/products/ProductListPage";
 import { ProductDetailPage } from "./pages/products/ProductDetailPage";
 import { ProductComparisonPage } from "./pages/products/ProductComparisonPage";
 import { CategoriesPage } from "./pages/categories/CategoriesPage";
 import { PlatformsPage } from "./pages/platforms/PlatformsPage";
+import { ShopifyProductsPage } from "./pages/platforms/ShopifyProductsPage";
+import { ProductIntelligencePage } from "./pages/products/ProductIntelligencePage";
+import { DataQualityAgentPage } from "./pages/agents/DataQualityAgentPage";
+import { PublicDataQualityPage } from "./pages/data_quality/PublicDataQualityPage";
+import { TrendDiscoveryPage } from "./pages/trends/TrendDiscoveryPage";
+import { AnomalyDashboardPage } from "./pages/anomalies/AnomalyDashboardPage";
+import { RecommendationIntelligencePage } from "./pages/recommendations/RecommendationIntelligencePage";
+import { MarketOpportunityPage } from "./pages/opportunities/MarketOpportunityPage";
 import { WatchlistPage } from "./pages/watchlist/WatchlistPage";
+
+
 import { AlertsPage } from "./pages/alerts/AlertsPage";
 import { NotificationsPage } from "./pages/notifications/NotificationsPage";
 import { ReportsListPage } from "./pages/reports/ReportsListPage";
@@ -83,11 +94,35 @@ export const App: React.FC = () => {
         }
       >
         <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/market-intelligence" element={<MarketIntelligenceDashboard />} />
+        <Route path="/intelligence/market" element={<MarketIntelligenceDashboard />} />
+        <Route path="/agents/data-quality" element={<DataQualityAgentPage />} />
+        <Route path="/data-quality" element={<DataQualityAgentPage />} />
+        <Route path="/rejected-products" element={<PublicDataQualityPage />} />
+        <Route path="/transparency/data-quality" element={<PublicDataQualityPage />} />
+        <Route path="/transparency" element={<PublicDataQualityPage />} />
         <Route path="/products" element={<ProductListPage />} />
+        <Route path="/trends" element={<TrendDiscoveryPage />} />
+        <Route path="/trends/discovery" element={<TrendDiscoveryPage />} />
+        <Route path="/agents/trend-detection" element={<TrendDiscoveryPage />} />
+        <Route path="/anomalies" element={<AnomalyDashboardPage />} />
+        <Route path="/anomalies/dashboard" element={<AnomalyDashboardPage />} />
+        <Route path="/agents/anomaly-detection" element={<AnomalyDashboardPage />} />
+        <Route path="/recommendations" element={<RecommendationIntelligencePage />} />
+        <Route path="/recommendations/dashboard" element={<RecommendationIntelligencePage />} />
+        <Route path="/agents/recommendation-engine" element={<RecommendationIntelligencePage />} />
+        <Route path="/opportunities" element={<MarketOpportunityPage />} />
+        <Route path="/opportunities/dashboard" element={<MarketOpportunityPage />} />
+        <Route path="/agents/market-opportunities" element={<MarketOpportunityPage />} />
+
+        <Route path="/products/intelligence" element={<ProductIntelligencePage />} />
+
+        <Route path="/intelligence" element={<ProductIntelligencePage />} />
         <Route path="/products/:id" element={<ProductDetailPage />} />
         <Route path="/product-comparison" element={<ProductComparisonPage />} />
         <Route path="/categories" element={<CategoriesPage />} />
         <Route path="/platforms" element={<PlatformsPage />} />
+        <Route path="/platforms/shopify" element={<ShopifyProductsPage />} />
         <Route path="/watchlist" element={<WatchlistPage />} />
         <Route path="/alerts" element={<AlertsPage />} />
         <Route path="/notifications" element={<NotificationsPage />} />

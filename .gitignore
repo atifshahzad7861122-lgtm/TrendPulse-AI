@@ -65,3 +65,21 @@ dist-ssr/
 Thumbs.db
 Desktop.ini
 $RECYCLE.BIN/
+
+# Agent & Assistant metadata
+.claude/
+.claude-flow/
+.swarm/
+.agents/
+
+# Scratch & debug artifacts
+scratch/
+backend/scratch/
+*.log
+daraz_1000_batch_summary.json
+data/
+backend/data/
+*chrome_recording_profile*
+*chrome_profile*
+*.db
+*.sqlite

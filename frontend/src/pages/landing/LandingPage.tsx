@@ -32,7 +32,12 @@ export const LandingPage: React.FC = () => {
             <a href="#reports" className="text-on-surface-variant hover:text-primary transition-colors">
               Reports
             </a>
+            <Link to="/transparency" className="text-rose-400/90 hover:text-rose-300 transition-colors flex items-center gap-1 font-semibold">
+              <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+              DQ Audit
+            </Link>
           </nav>
+
 
           <div className="flex items-center gap-6">
             <Link
@@ -140,7 +145,7 @@ export const LandingPage: React.FC = () => {
                     <span className="text-[11px] font-label-caps text-on-surface-variant uppercase">
                       Top Breakout Signal
                     </span>
-                    <h3 className="text-base font-bold text-on-surface mt-1">HydroGlow Lip Serum</h3>
+                    <h3 className="text-base font-bold text-on-surface mt-1">Wireless ANC Earbuds</h3>
                     <div className="text-2xl font-mono-data font-bold text-primary mt-3 flex items-baseline gap-2">
                       96.4
                       <span className="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20">

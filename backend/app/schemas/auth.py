@@ -22,9 +22,13 @@ class TokenResponse(BaseModel):
     is_verified: bool
     workspace_id: Optional[str] = None
     role: str
+    avatar_url: Optional[str] = None
 
 class VerifyEmailRequest(BaseModel):
     token: str
+
+class ResendVerificationRequest(BaseModel):
+    email: EmailStr
 
 class ForgotPasswordRequest(BaseModel):
     email: EmailStr
@@ -42,3 +46,11 @@ class UserProfileResponse(BaseModel):
     workspace_id: Optional[str] = None
     role: str
     avatar_url: Optional[str] = None
+
+class UserProfileUpdateRequest(BaseModel):
+    full_name: Optional[str] = Field(None, min_length=1, max_length=100)
+    email: Optional[EmailStr] = None
+    avatar_url: Optional[str] = None
+    role: Optional[str] = None
+
+

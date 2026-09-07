@@ -50,7 +50,9 @@ def test_02_registration_validation_and_success():
     assert res_valid.status_code == 200
     data = res_valid.json()["data"]
     assert data["email"] == "qa_operator@trendpulse.ai"
-    assert "verification_token" in data
+    assert "user_id" in data
+    assert "verification_token" not in data
+    assert "dev_verification_url" not in data
 
     # Test duplicate registration rejection
     res_dup = client.post(
@@ -66,6 +68,8 @@ def test_02_registration_validation_and_success():
     assert res_dup.status_code == 409
 
 def test_03_email_verification():
+    from backend.app.api.deps import get_user_repository
+    user_repo = get_user_repository()
     # Register a new user to verify
     res_reg = client.post(
         "/api/v1/auth/register",
@@ -77,7 +81,13 @@ def test_03_email_verification():
             "terms_accepted": True
         }
     )
-    token = res_reg.json()["data"]["verification_token"]
+    assert res_reg.status_code == 200
+    assert "verification_token" not in res_reg.json()["data"]
+
+    user = user_repo.get_by_email("verify_me@trendpulse.ai")
+    assert user is not None
+    token = user.verification_token
+    assert token is not None
 
     # Verify with invalid token
     res_inv = client.post("/api/v1/auth/verify-email", json={"token": "invalid_token_123"})

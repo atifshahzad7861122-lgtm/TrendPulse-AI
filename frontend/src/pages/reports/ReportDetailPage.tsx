@@ -50,7 +50,7 @@ export const ReportDetailPage: React.FC = () => {
 
   const handleExportCsv = () => {
     if (!report) return;
-    const csvContent = `data:text/csv;charset=utf-8,ID,Title,Template,TimeRange,TotalSignals,Convictions\n${report.id},"${report.title}",${report.template},${report.time_range},${report.total_signals_analyzed},${report.high_conviction_count}\n`;
+    const csvContent = `data:text/csv;charset=utf-8,ID,Title,Template,TimeRange,TotalSignals,ProductsEvaluated,Convictions,Provenance\n${report.id},"${report.title}",${report.template},${report.time_range},${report.total_signals_analyzed},${report.products_evaluated || 0},${report.high_conviction_count},"${report.provenance || 'persisted_observations'}"\n`;
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
@@ -86,9 +86,16 @@ export const ReportDetailPage: React.FC = () => {
             <span className="material-symbols-outlined text-lg">arrow_back</span>
           </button>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="text-[10px] font-mono-data uppercase font-bold text-primary px-2.5 py-0.5 rounded-full bg-primary/10 border border-primary/20">
                 {report.template.replace("_", " ")}
+              </span>
+              <span className="text-[10px] font-mono-data uppercase font-semibold text-on-surface-variant px-2.5 py-0.5 rounded-full bg-surface-container border border-outline-variant/20">
+                {report.provenance === "persisted_marketplace_observations"
+                  ? "PERSISTED MARKETPLACE"
+                  : report.provenance === "live_ingested_signals"
+                  ? "LIVE CONNECTOR"
+                  : "PERSISTED OBSERVATIONS"}
               </span>
               <span className="text-xs text-on-surface-variant font-mono-data">
                 {new Date(report.created_at).toLocaleDateString()}
@@ -125,6 +132,25 @@ export const ReportDetailPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Data Sufficiency Banner */}
+      {report.data_sufficiency === "no_data" || (report.products_evaluated || 0) === 0 ? (
+        <div className="p-4 rounded-2xl bg-error/10 border border-error/20 flex items-center gap-3 text-error">
+          <span className="material-symbols-outlined text-xl">info</span>
+          <div className="text-xs">
+            <p className="font-bold">No Report Intelligence Available</p>
+            <p className="text-[11px] opacity-90 mt-0.5">No persisted products or observations match the requested category/platforms.</p>
+          </div>
+        </div>
+      ) : report.data_sufficiency === "insufficient_data" ? (
+        <div className="p-4 rounded-2xl bg-surface-container border border-outline-variant/30 flex items-center gap-3 text-on-surface-variant">
+          <span className="material-symbols-outlined text-xl text-primary">data_info_alert</span>
+          <div className="text-xs">
+            <p className="font-bold text-on-surface">Baseline Observation Report</p>
+            <p className="text-[11px] text-on-surface-variant mt-0.5">Single-point records available. Multi-period velocity divergence requires multiple chronological snapshots.</p>
+          </div>
+        </div>
+      ) : null}
+
       {/* Report Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant/20">
@@ -132,7 +158,15 @@ export const ReportDetailPage: React.FC = () => {
             Total Signals
           </span>
           <p className="text-xl font-mono-data font-bold text-primary mt-1">
-            {report.total_signals_analyzed.toLocaleString()}
+            {report.total_signals_analyzed > 0 ? report.total_signals_analyzed.toLocaleString() : "N/A"}
+          </p>
+        </div>
+        <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant/20">
+          <span className="text-[10px] font-label-caps text-on-surface-variant uppercase">
+            Products Evaluated
+          </span>
+          <p className="text-xl font-mono-data font-bold text-on-surface mt-1">
+            {report.products_evaluated ?? 0} Products
           </p>
         </div>
         <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant/20">
@@ -140,7 +174,7 @@ export const ReportDetailPage: React.FC = () => {
             High Conviction
           </span>
           <p className="text-xl font-mono-data font-bold text-on-surface mt-1">
-            {report.high_conviction_count} Targets
+            {report.high_conviction_count > 0 ? `${report.high_conviction_count} Targets` : "0 Identified"}
           </p>
         </div>
         <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant/20">
@@ -149,14 +183,6 @@ export const ReportDetailPage: React.FC = () => {
           </span>
           <p className="text-xl font-mono-data font-bold text-on-surface mt-1">
             {report.time_range.toUpperCase()}
-          </p>
-        </div>
-        <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant/20">
-          <span className="text-[10px] font-label-caps text-on-surface-variant uppercase">
-            Author
-          </span>
-          <p className="text-sm font-semibold text-on-surface mt-1 truncate">
-            {report.created_by}
           </p>
         </div>
       </div>
@@ -169,7 +195,7 @@ export const ReportDetailPage: React.FC = () => {
             Executive Synthesis & Conviction Assessment
           </span>
         </div>
-        <p className="font-editorial-italic text-lg md:text-xl text-on-surface leading-relaxed italic">
+        <p className="font-editorial-italic text-base md:text-lg text-on-surface leading-relaxed italic">
           "{report.ai_takeaways}"
         </p>
       </div>

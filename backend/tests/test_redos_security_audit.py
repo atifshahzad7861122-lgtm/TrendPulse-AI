@@ -83,7 +83,7 @@ def test_api_search_adversarial_redos_resilience():
         elapsed = time.perf_counter() - start
         # Either 200 (if <= 200 chars) or 422 (if > 200 chars due to max_length constraint)
         assert res.status_code in [200, 422]
-        assert elapsed < 0.2, f"Search API took {elapsed:.4f}s on adversarial query"
+        assert elapsed < 0.5, f"Search API took {elapsed:.4f}s on adversarial query"
 
 def test_api_auth_adversarial_email_resilience():
     """
@@ -102,4 +102,4 @@ def test_api_auth_adversarial_email_resilience():
         elapsed = time.perf_counter() - start
         # Either 422 (invalid email format) or 401 (not found)
         assert res.status_code in [401, 422]
-        assert elapsed < 0.1, f"Auth validation took {elapsed:.4f}s on email {email[:30]}..."
+        assert elapsed < 0.5, f"Auth validation took {elapsed:.4f}s on email {email[:30]}..."

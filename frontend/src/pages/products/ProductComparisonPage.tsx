@@ -19,7 +19,7 @@ const LINE_COLORS = ["#ffb68d", "#c9c6c5", "#df7328", "#ffdcc2"];
 
 export const ProductComparisonPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const rawIds = searchParams.get("ids") || "prod_01,prod_02";
+  const rawIds = searchParams.get("ids") || "";
 
   const [compareIds, setCompareIds] = useState<string[]>(
     rawIds.split(",").filter((i) => i.trim())
@@ -38,7 +38,7 @@ export const ProductComparisonPage: React.FC = () => {
       try {
         const [allRes, compRes] = await Promise.all([
           productService.list(),
-          productService.compare(compareIds),
+          compareIds.length > 0 ? productService.compare(compareIds) : Promise.resolve({ success: true, data: [] }),
         ]);
         if (allRes.success && allRes.data) setAllProducts(allRes.data);
         if (compRes.success && compRes.data) setComparedProducts(compRes.data);
@@ -49,21 +49,13 @@ export const ProductComparisonPage: React.FC = () => {
       }
     };
 
-    if (compareIds.length > 0) {
-      fetchAllAndCompare();
-    } else {
-      setLoading(false);
-    }
+    fetchAllAndCompare();
   }, [compareIds]);
 
   const removeProduct = (id: string) => {
-    if (compareIds.length <= 1) {
-      showToast("Comparison requires at least 1 product", "warning");
-      return;
-    }
     const updated = compareIds.filter((i) => i !== id);
     setCompareIds(updated);
-    setSearchParams({ ids: updated.join(",") });
+    setSearchParams(updated.length > 0 ? { ids: updated.join(",") } : {});
   };
 
   const addProduct = (id: string) => {
@@ -77,23 +69,23 @@ export const ProductComparisonPage: React.FC = () => {
     setSearchParams({ ids: updated.join(",") });
   };
 
+  const hasHistoricalTrajectory = comparedProducts.some(
+    (p) => p.historical_scores && p.historical_scores.length > 1
+  );
+
   // Build chart dataset
-  const chartData = [
-    { day: "Day 1" },
-    { day: "Day 2" },
-    { day: "Day 3" },
-    { day: "Day 4" },
-    { day: "Day 5" },
-    { day: "Day 6" },
-    { day: "Today" },
-  ].map((item, idx) => {
-    const point: any = { day: item.day };
-    comparedProducts.forEach((p) => {
-      const score = p.historical_scores[idx]?.score || p.trend_score;
-      point[p.name] = score;
-    });
-    return point;
-  });
+  const chartData = hasHistoricalTrajectory
+    ? (comparedProducts.find((p) => p.historical_scores && p.historical_scores.length > 1)?.historical_scores || []).map(
+        (h, idx) => {
+          const point: any = { day: h.date || `Point ${idx + 1}` };
+          comparedProducts.forEach((p) => {
+            const score = p.historical_scores[idx]?.score || p.trend_score;
+            point[p.name] = score;
+          });
+          return point;
+        }
+      )
+    : [];
 
   return (
     <div className="space-y-8 animate-in fade-in duration-200">
@@ -101,13 +93,13 @@ export const ProductComparisonPage: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-outline-variant/15 pb-6">
         <div>
           <span className="text-xs font-label-caps text-primary uppercase tracking-widest">
-            HEAD-TO-HEAD MATRIX
+            HEAD-TO-HEAD MATRIX & OBSERVATIONS
           </span>
           <h1 className="text-2xl md:text-3xl font-headline-md font-bold text-on-surface mt-1">
             Product Signal Comparison
           </h1>
           <p className="text-xs text-on-surface-variant mt-1">
-            Analyze trajectory divergence, platform shares, and sentiment conviction side-by-side.
+            Analyze trajectory divergence, platform shares, and verified observation metrics side-by-side.
           </p>
         </div>
 
@@ -140,11 +132,11 @@ export const ProductComparisonPage: React.FC = () => {
       {loading ? (
         <LoadingSpinner size="lg" label="Aligning comparison matrices..." />
       ) : error ? (
-        <ErrorState message={error} onRetry={() => setCompareIds(rawIds.split(","))} />
+        <ErrorState message={error} onRetry={() => setCompareIds(rawIds.split(",").filter((i) => i.trim()))} />
       ) : comparedProducts.length === 0 ? (
         <EmptyState
-          title="No Products Selected"
-          description="Select 2 to 4 products from the dropdown above to generate the comparative trajectory curve and dimensional matrix."
+          title="No Products Selected for Comparison"
+          description="Select 2 to 4 products from the dropdown above or from the Products Catalog to generate the comparative dimensional matrix."
           icon="compare_arrows"
         />
       ) : (
@@ -176,38 +168,48 @@ export const ProductComparisonPage: React.FC = () => {
           <div className="bg-surface-container-low p-6 rounded-2xl border border-outline-variant/20 glass-card">
             <h3 className="text-base font-bold text-on-surface mb-1">Comparative Trajectory Curve</h3>
             <p className="text-xs text-on-surface-variant mb-6">
-              7-Day normalized velocity divergence across compared products
+              Normalized velocity divergence across compared products backed by verified snapshots
             </p>
 
-            <div className="h-72 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#292a27" />
-                  <XAxis dataKey="day" stroke="#888888" fontSize={11} tickLine={false} axisLine={false} />
-                  <YAxis stroke="#888888" fontSize={11} tickLine={false} axisLine={false} domain={["dataMin - 5", "dataMax + 5"]} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "#1e201d",
-                      borderColor: "#564338",
-                      borderRadius: "0.75rem",
-                      color: "#e3e3de",
-                      fontSize: "12px",
-                    }}
-                  />
-                  <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "10px" }} />
-                  {comparedProducts.map((p, idx) => (
-                    <Line
-                      key={p.id}
-                      type="monotone"
-                      dataKey={p.name}
-                      stroke={LINE_COLORS[idx % LINE_COLORS.length]}
-                      strokeWidth={2.5}
-                      dot={{ r: 4 }}
+            {hasHistoricalTrajectory ? (
+              <div className="h-72 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#292a27" />
+                    <XAxis dataKey="day" stroke="#888888" fontSize={11} tickLine={false} axisLine={false} />
+                    <YAxis stroke="#888888" fontSize={11} tickLine={false} axisLine={false} domain={["dataMin - 5", "dataMax + 5"]} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#1e201d",
+                        borderColor: "#564338",
+                        borderRadius: "0.75rem",
+                        color: "#e3e3de",
+                        fontSize: "12px",
+                      }}
                     />
-                  ))}
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+                    <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "10px" }} />
+                    {comparedProducts.map((p, idx) => (
+                      <Line
+                        key={p.id}
+                        type="monotone"
+                        dataKey={p.name}
+                        stroke={LINE_COLORS[idx % LINE_COLORS.length]}
+                        strokeWidth={2.5}
+                        dot={{ r: 4 }}
+                      />
+                    ))}
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="py-12 text-center bg-surface-container-lowest/40 rounded-xl border border-outline-variant/10">
+                <span className="material-symbols-outlined text-3xl text-on-surface-variant/60 mb-2">timeline</span>
+                <p className="text-xs text-on-surface font-semibold">Single-Point Observations Available</p>
+                <p className="text-[11px] text-on-surface-variant max-w-sm mx-auto mt-1">
+                  Multi-day trajectory curves require at least two chronological snapshot observations in the database.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Comparison Matrix Table */}
@@ -230,10 +232,32 @@ export const ProductComparisonPage: React.FC = () => {
                 </thead>
                 <tbody className="divide-y divide-outline-variant/10 text-on-surface">
                   <tr>
+                    <td className="p-4 font-label-caps text-on-surface-variant uppercase">Data Provenance</td>
+                    {comparedProducts.map((p) => (
+                      <td key={p.id} className="p-4 font-mono-data font-semibold">
+                        <span className="px-2 py-0.5 rounded text-[10px] bg-primary/10 text-primary border border-primary/20">
+                          {p.provenance === "persisted_marketplace_observations"
+                            ? "PERSISTED MARKETPLACE"
+                            : p.provenance === "live_ingested_signals"
+                            ? "LIVE CONNECTOR"
+                            : "CATALOG OBSERVATION"}
+                        </span>
+                      </td>
+                    ))}
+                  </tr>
+                  <tr>
+                    <td className="p-4 font-label-caps text-on-surface-variant uppercase">Observations Count</td>
+                    {comparedProducts.map((p) => (
+                      <td key={p.id} className="p-4 font-mono-data">
+                        {p.observation_count || (p.historical_scores?.length || 1)} recorded
+                      </td>
+                    ))}
+                  </tr>
+                  <tr>
                     <td className="p-4 font-label-caps text-on-surface-variant uppercase">Trend Score</td>
                     {comparedProducts.map((p) => (
                       <td key={p.id} className="p-4 font-mono-data font-bold text-primary text-base">
-                        {p.trend_score}
+                        {p.trend_score > 0 ? p.trend_score : "N/A"}
                       </td>
                     ))}
                   </tr>
@@ -241,8 +265,14 @@ export const ProductComparisonPage: React.FC = () => {
                     <td className="p-4 font-label-caps text-on-surface-variant uppercase">Velocity Label</td>
                     {comparedProducts.map((p) => (
                       <td key={p.id} className="p-4 font-mono-data">
-                        <span className="px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">
-                          {p.velocity_label}
+                        <span
+                          className={`px-2 py-0.5 rounded border ${
+                            p.trend_score > 0
+                              ? "bg-primary/10 text-primary border-primary/20"
+                              : "bg-surface-container text-on-surface-variant border-outline-variant/30"
+                          }`}
+                        >
+                          {p.trend_score > 0 ? p.velocity_label : "INSUFFICIENT DATA"}
                         </span>
                       </td>
                     ))}
@@ -251,7 +281,7 @@ export const ProductComparisonPage: React.FC = () => {
                     <td className="p-4 font-label-caps text-on-surface-variant uppercase">YoY Growth</td>
                     {comparedProducts.map((p) => (
                       <td key={p.id} className="p-4 font-mono-data font-bold">
-                        +{p.growth_rate}%
+                        {p.growth_rate !== 0 ? (p.growth_rate > 0 ? `+${p.growth_rate}%` : `${p.growth_rate}%`) : "N/A"}
                       </td>
                     ))}
                   </tr>
@@ -259,7 +289,7 @@ export const ProductComparisonPage: React.FC = () => {
                     <td className="p-4 font-label-caps text-on-surface-variant uppercase">Monthly Volume</td>
                     {comparedProducts.map((p) => (
                       <td key={p.id} className="p-4 font-mono-data">
-                        {p.volume.toLocaleString()} mentions
+                        {p.volume > 0 ? `${p.volume.toLocaleString()} mentions` : "N/A"}
                       </td>
                     ))}
                   </tr>
@@ -267,7 +297,7 @@ export const ProductComparisonPage: React.FC = () => {
                     <td className="p-4 font-label-caps text-on-surface-variant uppercase">Sentiment Score</td>
                     {comparedProducts.map((p) => (
                       <td key={p.id} className="p-4 font-mono-data">
-                        {Math.round(p.sentiment_score * 100)}% Positive
+                        {p.sentiment_score > 0 ? `${Math.round(p.sentiment_score * 100)}% Positive` : "Insufficient Data"}
                       </td>
                     ))}
                   </tr>
@@ -275,7 +305,7 @@ export const ProductComparisonPage: React.FC = () => {
                     <td className="p-4 font-label-caps text-on-surface-variant uppercase">Primary Channel</td>
                     {comparedProducts.map((p) => (
                       <td key={p.id} className="p-4 font-medium">
-                        {p.primary_platform}
+                        {p.primary_platform || "Daraz"}
                       </td>
                     ))}
                   </tr>
@@ -283,7 +313,7 @@ export const ProductComparisonPage: React.FC = () => {
                     <td className="p-4 font-label-caps text-on-surface-variant uppercase">Price Band</td>
                     {comparedProducts.map((p) => (
                       <td key={p.id} className="p-4 font-mono-data">
-                        {p.price_range}
+                        {p.price_range || "—"}
                       </td>
                     ))}
                   </tr>

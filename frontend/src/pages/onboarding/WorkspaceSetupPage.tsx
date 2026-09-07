@@ -5,7 +5,7 @@ import { useWorkspace } from "../../context/WorkspaceContext";
 import { useToast } from "../../context/ToastContext";
 
 export const WorkspaceSetupPage: React.FC = () => {
-  const [name, setName] = useState("Apex Intelligence Labs");
+  const [name, setName] = useState("My Intelligence Workspace");
   const [industry, setIndustry] = useState("E-commerce & Consumer Tech");
   const [useCase, setUseCase] = useState("Trend Prediction & Arbitrage");
   const [currency, setCurrency] = useState("USD");

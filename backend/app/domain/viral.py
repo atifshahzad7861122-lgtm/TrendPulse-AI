@@ -1,4 +1,4 @@
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 class ViralEvaluationResult:
     def __init__(
@@ -118,3 +118,128 @@ class ViralPotentialEngine:
             growth_rate, platforms, platform_shares, velocity_label
         )
         return res.label
+
+    @staticmethod
+    def evaluate_from_social_signals(
+        signals: List[Any],  # List[SocialSignal] or list of signal dicts
+        growth_rate: Optional[float] = None
+    ) -> Dict[str, Any]:
+        """
+        Evaluates virality strictly when verified social signals exist.
+        Returns unavailable when no social signals are present.
+        """
+        if not signals or len(signals) == 0:
+            return {
+                "viral_score": None,
+                "viral_level": "unavailable",
+                "confidence": 0.0,
+                "has_social_signals": False,
+                "supporting_signals": []
+            }
+
+        total_views = 0
+        total_likes = 0
+        total_comments = 0
+        total_shares = 0
+        platforms = set()
+
+        for s in signals:
+            if hasattr(s, "views"):
+                views = getattr(s, "views", 0) or 0
+                likes = getattr(s, "likes", 0) or 0
+                comments = getattr(s, "comments", 0) or 0
+                shares = getattr(s, "shares", 0) or 0
+                plat = getattr(s, "platform", "")
+            elif isinstance(s, dict):
+                views = s.get("views", 0) or 0
+                likes = s.get("likes", 0) or 0
+                comments = s.get("comments", 0) or 0
+                shares = s.get("shares", 0) or 0
+                plat = s.get("platform", "")
+            else:
+                continue
+
+            total_views += views
+            total_likes += likes
+            total_comments += comments
+            total_shares += shares
+            if plat:
+                platforms.add(plat)
+
+        if total_views == 0 and total_likes == 0 and len(signals) == 0:
+            return {
+                "viral_score": None,
+                "viral_level": "unavailable",
+                "confidence": 0.0,
+                "has_social_signals": False,
+                "supporting_signals": []
+            }
+
+        score = 0.0
+        contributors = []
+
+        # View volume (log scale, up to 40 pts)
+        if total_views >= 500000:
+            score += 40.0
+            contributors.append(f"Viral reach: {total_views:,} verified video views")
+        elif total_views >= 200000:
+            score += 35.0
+            contributors.append(f"Massive social visibility ({total_views:,} views)")
+        elif total_views >= 100000:
+            score += 30.0
+            contributors.append(f"Significant social visibility ({total_views:,} views)")
+        elif total_views >= 10000:
+            score += 20.0
+            contributors.append(f"Growing video exposure ({total_views:,} views)")
+        elif total_views > 0:
+            score += 10.0
+
+        # Engagement: Likes + Comments + Shares (up to 30 pts)
+        eng_total = total_likes + total_comments + total_shares
+        if eng_total >= 25000:
+            score += 30.0
+            contributors.append(f"High social engagement: {eng_total:,} interactions")
+        elif eng_total >= 10000:
+            score += 25.0
+            contributors.append(f"Strong social engagement ({eng_total:,} interactions)")
+        elif eng_total >= 5000:
+            score += 20.0
+            contributors.append(f"Active audience discussions ({eng_total:,} interactions)")
+        elif eng_total >= 500:
+            score += 10.0
+
+        # Platform Diversity (up to 15 pts)
+        if len(platforms) >= 3:
+            score += 15.0
+            contributors.append(f"Multi-network presence across {', '.join(platforms)}")
+        elif len(platforms) == 2:
+            score += 10.0
+            contributors.append(f"Cross-channel spread on {', '.join(platforms)}")
+        elif len(platforms) == 1:
+            score += 5.0
+
+        # Growth bonus (up to 15 pts)
+        if growth_rate and growth_rate > 50.0:
+            score += 15.0
+            contributors.append(f"Accelerating social interest (+{growth_rate:.0f}%)")
+
+        clamped = round(min(max(score, 5.0), 99.0), 1)
+
+        if clamped >= 80.0:
+            level = "Very High"
+        elif clamped >= 60.0:
+            level = "High"
+        elif clamped >= 35.0:
+            level = "Moderate"
+        else:
+            level = "Low"
+
+        conf = min(0.40 + (min(total_views / 200000.0, 1.0) * 0.35) + (len(platforms) * 0.10), 0.95)
+
+        return {
+            "viral_score": clamped,
+            "viral_level": level,
+            "confidence": round(conf, 2),
+            "has_social_signals": True,
+            "supporting_signals": contributors
+        }

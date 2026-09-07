@@ -3,6 +3,7 @@ import { settingsService } from "../../services/domainServices";
 import type { UserSettings } from "../../types";
 import { LoadingSpinner, ErrorState } from "../../components/common/StateComponents";
 import { useToast } from "../../context/ToastContext";
+import { useAuth } from "../../context/AuthContext";
 
 export const SettingsPage: React.FC = () => {
   const [settings, setSettings] = useState<UserSettings | null>(null);
@@ -12,6 +13,7 @@ export const SettingsPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const { showToast } = useToast();
+  const { refreshProfile, updateUser } = useAuth();
 
   const fetchSettings = async () => {
     setLoading(true);
@@ -36,12 +38,28 @@ export const SettingsPage: React.FC = () => {
     e.preventDefault();
     if (!settings) return;
 
+    if (!settings.full_name || !settings.full_name.trim()) {
+      showToast("Full Name is required and cannot be empty", "error");
+      return;
+    }
+
     setSaving(true);
     try {
       const res = await settingsService.updateSettings(settings);
       if (res.success && res.data) {
         setSettings(res.data);
+        if (updateUser) {
+          updateUser({
+            full_name: res.data.full_name,
+            email: res.data.email,
+            role: res.data.role,
+            avatar_url: res.data.avatar_url,
+          });
+        }
+        refreshProfile().catch(() => {});
         showToast("Settings saved successfully!", "success");
+      } else {
+        showToast(res.message || "Failed to save settings", "error");
       }
     } catch (err: any) {
       showToast(err.message || "Failed to save settings", "error");
@@ -165,6 +183,19 @@ export const SettingsPage: React.FC = () => {
                   type="text"
                   value={settings.company_name}
                   onChange={(e) => setSettings({ ...settings, company_name: e.target.value })}
+                  className="w-full bg-surface-container border border-outline-variant/30 rounded-xl px-4 py-2.5 text-xs text-on-surface focus:outline-none focus:border-primary"
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="block text-[11px] font-label-caps text-on-surface-variant uppercase tracking-wider mb-2">
+                  Avatar Image URL (Optional)
+                </label>
+                <input
+                  type="url"
+                  placeholder="https://example.com/avatar.jpg"
+                  value={settings.avatar_url || ""}
+                  onChange={(e) => setSettings({ ...settings, avatar_url: e.target.value })}
                   className="w-full bg-surface-container border border-outline-variant/30 rounded-xl px-4 py-2.5 text-xs text-on-surface focus:outline-none focus:border-primary"
                 />
               </div>

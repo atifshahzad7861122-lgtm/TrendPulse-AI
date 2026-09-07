@@ -98,6 +98,8 @@ def test_password_reset_token_replay_rejected():
 
 def test_email_verification_token_replay_rejected():
     """Verify that an email verification token cannot be reused after verification."""
+    from backend.app.api.deps import get_user_repository
+    user_repo = get_user_repository()
     email = "verify_replay@trendpulse.ai"
     reg_res = client.post("/api/v1/auth/register", json={
         "full_name": "Verify Replay User",
@@ -106,7 +108,13 @@ def test_email_verification_token_replay_rejected():
         "confirm_password": "Password123!",
         "terms_accepted": True
     })
-    token = reg_res.json()["data"]["verification_token"]
+    assert reg_res.status_code == 200
+    assert "verification_token" not in reg_res.json()["data"]
+
+    user = user_repo.get_by_email(email)
+    assert user is not None
+    token = user.verification_token
+    assert token is not None
 
     # 1st verification (Success)
     res1 = client.post("/api/v1/auth/verify-email", json={"token": token})

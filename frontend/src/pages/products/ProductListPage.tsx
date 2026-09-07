@@ -4,6 +4,7 @@ import { productService, watchlistService } from "../../services/domainServices"
 import type { Product } from "../../types";
 import { LoadingSpinner, EmptyState, ErrorState } from "../../components/common/StateComponents";
 import { useToast } from "../../context/ToastContext";
+import { DarazProductModal } from "../../components/products/DarazProductModal";
 
 export const ProductListPage: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -12,8 +13,10 @@ export const ProductListPage: React.FC = () => {
   const [platform, setPlatform] = useState("all");
   const [sortBy, setSortBy] = useState("trend_score");
   const [selectedForCompare, setSelectedForCompare] = useState<string[]>([]);
+  const [selectedDarazId, setSelectedDarazId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
 
   const navigate = useNavigate();
   const { showToast } = useToast();
@@ -28,8 +31,10 @@ export const ProductListPage: React.FC = () => {
         search: search.trim() || undefined,
         sort_by: sortBy,
       });
-      if (res.success && res.data) {
+      if (res.success && Array.isArray(res.data)) {
         setProducts(res.data);
+      } else if (!res.success) {
+        setError(res.message || "Failed to load product catalog");
       }
     } catch (err: any) {
       setError(err.message || "Failed to load product catalog");
@@ -198,11 +203,20 @@ export const ProductListPage: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {products.map((p) => {
             const isComparing = selectedForCompare.includes(p.id);
+            const isDaraz = p.id.startsWith("daraz_") || p.primary_platform === "Daraz";
             return (
               <div
                 key={p.id}
-                onClick={() => navigate(`/products/${p.id}`)}
-                className="bg-surface-container-low rounded-2xl border border-outline-variant/20 hover:border-primary/40 cursor-pointer transition-all hover:scale-[1.01] glass-card overflow-hidden flex flex-col justify-between group"
+                onClick={() => {
+                  if (isDaraz) {
+                    setSelectedDarazId(p.id);
+                  } else {
+                    navigate(`/products/${p.id}`);
+                  }
+                }}
+                className={`bg-surface-container-low rounded-2xl border ${
+                  isDaraz ? "border-[#f85606]/30 hover:border-[#f85606]" : "border-outline-variant/20 hover:border-primary/40"
+                } cursor-pointer transition-all hover:scale-[1.01] glass-card overflow-hidden flex flex-col justify-between group`}
               >
                 {/* Product Image Banner */}
                 <div className="h-44 w-full bg-surface-container relative overflow-hidden">
@@ -224,8 +238,10 @@ export const ProductListPage: React.FC = () => {
                     <span className="text-[10px] font-mono-data font-bold text-primary px-2.5 py-1 rounded-full bg-surface/90 border border-primary/30 backdrop-blur-md">
                       {p.velocity_label}
                     </span>
-                    <span className="text-[10px] font-mono-data text-on-surface px-2.5 py-1 rounded-full bg-surface/80 border border-outline-variant/30 backdrop-blur-md">
-                      {p.primary_platform}
+                    <span className={`text-[10px] font-mono-data px-2.5 py-1 rounded-full bg-surface/80 border backdrop-blur-md font-semibold ${
+                      isDaraz ? "text-[#f85606] border-[#f85606]/40" : "text-on-surface border-outline-variant/30"
+                    }`}>
+                      {isDaraz ? "Daraz Pakistan" : p.primary_platform}
                     </span>
                   </div>
 
@@ -262,9 +278,16 @@ export const ProductListPage: React.FC = () => {
                 {/* Content Details */}
                 <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
                   <div>
-                    <span className="text-[10px] font-label-caps text-on-surface-variant uppercase">
-                      {p.category}
-                    </span>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-label-caps text-on-surface-variant uppercase">
+                        {p.category}
+                      </span>
+                      {isDaraz && (
+                        <span className="text-[10px] font-mono-data text-[#f85606] font-bold">
+                          Live Data
+                        </span>
+                      )}
+                    </div>
                     <h3 className="text-base font-bold text-on-surface mt-1 group-hover:text-primary transition-colors leading-snug line-clamp-1">
                       {p.name}
                     </h3>
@@ -277,25 +300,25 @@ export const ProductListPage: React.FC = () => {
                   <div className="pt-3 border-t border-outline-variant/15 flex items-center justify-between">
                     <div>
                       <span className="text-[10px] text-on-surface-variant font-label-caps uppercase">
-                        Trend Score
+                        {isDaraz ? "Market Rating" : "Trend Score"}
                       </span>
-                      <p className="text-xl font-mono-data font-bold text-primary">
-                        {p.trend_score}
+                      <p className={`text-xl font-mono-data font-bold ${isDaraz ? "text-[#f85606]" : "text-primary"}`}>
+                        {isDaraz && p.raw_data?.daraz_product?.rating ? `★ ${p.raw_data.daraz_product.rating.toFixed(1)}` : p.trend_score}
                       </p>
                     </div>
                     <div>
                       <span className="text-[10px] text-on-surface-variant font-label-caps uppercase">
-                        YoY Velocity
+                        {isDaraz ? "Discount" : "YoY Velocity"}
                       </span>
                       <p className="text-xs font-mono-data font-bold text-on-surface">
-                        +{p.growth_rate}%
+                        {isDaraz ? (p.raw_data?.discount_label || `${p.growth_rate}% Off`) : `+${p.growth_rate}%`}
                       </p>
                     </div>
                     <div>
                       <span className="text-[10px] text-on-surface-variant font-label-caps uppercase">
-                        Est. Range
+                        {isDaraz ? "Price (PKR)" : "Est. Range"}
                       </span>
-                      <p className="text-xs font-mono-data text-on-surface-variant">
+                      <p className="text-xs font-mono-data text-on-surface-variant font-semibold">
                         {p.price_range}
                       </p>
                     </div>
@@ -306,6 +329,16 @@ export const ProductListPage: React.FC = () => {
           })}
         </div>
       )}
+
+      {/* Daraz Product Detail Modal */}
+      {selectedDarazId && (
+        <DarazProductModal
+          itemId={selectedDarazId}
+          isOpen={!!selectedDarazId}
+          onClose={() => setSelectedDarazId(null)}
+        />
+      )}
     </div>
   );
 };
+

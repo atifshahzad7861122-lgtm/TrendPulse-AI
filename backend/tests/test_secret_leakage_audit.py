@@ -75,6 +75,8 @@ def test_frontend_dist_bundle_free_of_secrets():
 def test_api_responses_do_not_leak_password_hashes():
     """Verify that auth and user endpoints do not leak password hashes or internal secret keys."""
     # 1. Register test user
+    from backend.app.api.deps import get_user_repository
+    user_repo = get_user_repository()
     email = "secret_audit_user@trendpulse.ai"
     reg_res = client.post("/api/v1/auth/register", json={
         "full_name": "Audit User",
@@ -83,9 +85,10 @@ def test_api_responses_do_not_leak_password_hashes():
         "confirm_password": "Password123!",
         "terms_accepted": True
     })
-    token = reg_res.json().get("data", {}).get("verification_token")
-    if token:
-        client.post("/api/v1/auth/verify-email", json={"token": token})
+    assert "verification_token" not in reg_res.json().get("data", {})
+    user = user_repo.get_by_email(email)
+    if user and user.verification_token:
+        client.post("/api/v1/auth/verify-email", json={"token": user.verification_token})
 
     login_res = client.post("/api/v1/auth/login", json={
         "email": email,

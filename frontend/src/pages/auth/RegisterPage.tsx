@@ -43,9 +43,9 @@ export const RegisterPage: React.FC = () => {
       });
 
       if (res.success && res.data) {
-        showToast("Account created! Please verify your email.", "success");
-        // Redirect to email verification page with token
-        navigate(`/verify-email?token=${res.data.verification_token}&email=${encodeURIComponent(email)}`);
+        showToast("Account created! Please check your email for the verification code.", "success");
+        // Redirect to email verification page (without raw token)
+        navigate(`/verify-email?email=${encodeURIComponent(email)}`);
       }
     } catch (err: any) {
       setError(err.message || "Registration failed. Please check your credentials.");
@@ -82,7 +82,7 @@ export const RegisterPage: React.FC = () => {
             value={fullName}
             maxLength={100}
             onChange={(e) => setFullName(e.target.value)}
-            placeholder="Alex Vance"
+            placeholder="Enter full name"
             className="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-3.5 py-2.5 text-xs text-on-surface placeholder-on-surface-variant/40 focus:outline-none focus:border-primary transition-colors"
           />
         </div>
@@ -96,7 +96,7 @@ export const RegisterPage: React.FC = () => {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="alex@company.com"
+            placeholder="name@company.com"
             className="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl px-3.5 py-2.5 text-xs text-on-surface placeholder-on-surface-variant/40 focus:outline-none focus:border-primary transition-colors"
           />
         </div>

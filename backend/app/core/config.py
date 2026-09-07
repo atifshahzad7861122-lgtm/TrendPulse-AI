@@ -39,6 +39,51 @@ class Settings(BaseSettings):
     YOUTUBE_REGION_CODE: str = "US"
     YOUTUBE_LANGUAGE: str = "en"
 
-    model_config = SettingsConfigDict(case_sensitive=True, env_file=".env", extra="ignore")
+    # Daraz Pakistan / Parse Scraper API Configuration
+    PARSE_API_KEY: Optional[str] = None
+    PARSE_DARAZ_API_BASE_URL: str = "https://api.parse.bot/scraper/668a2f8a-7eec-4765-8e69-8089abdf24ae"
+    DARAZ_CACHE_TTL_SECONDS: int = 300  # 5 minutes for price/product caching
+    DARAZ_CATEGORY_CACHE_TTL_SECONDS: int = 3600  # 1 hour for categories
+    DARAZ_TIMEOUT_SECONDS: float = 20.0
+    DARAZ_MAX_RETRIES: int = 3
+    DARAZ_RETRY_BACKOFF_FACTOR: float = 1.5
+
+    # Daraz Official Open Platform Configuration
+    DARAZ_APP_KEY: Optional[str] = None
+    DARAZ_APP_SECRET: Optional[str] = None
+    DARAZ_CALLBACK_URL: Optional[str] = None
+    DARAZ_API_BASE_URL: str = "https://api.daraz.pk/rest"
+    DARAZ_AUTH_BASE_URL: str = "https://api.daraz.pk/oauth/authorize"
+    DARAZ_ACCESS_TOKEN: Optional[str] = None
+    DARAZ_REFRESH_TOKEN: Optional[str] = None
+    DARAZ_SELLER_ID: Optional[str] = None
+
+    # LLM Intelligence Foundation Configuration
+    LLM_PROVIDER: str = "mock"  # "mock" | "openai" | "gemini" | "anthropic" | "openrouter"
+    LLM_API_KEY: Optional[str] = None
+    LLM_MODEL: str = "gpt-4o-mini"
+    LLM_BASE_URL: Optional[str] = None
+    LLM_MAX_TOKENS: int = 2048
+    LLM_TEMPERATURE: float = 0.2
+    LLM_TIMEOUT: float = 30.0
+    LLM_ENABLED: bool = True
+    LLM_CACHE_ENABLED: bool = True
+    LLM_CACHE_TTL_SECONDS: int = 86400  # 24 hours
+
+    # Groq & Grok (xAI) API Configuration
+    GROQ_API_KEY: Optional[str] = None
+    XAI_API_KEY: Optional[str] = None
+    GROK_API_KEY: Optional[str] = None
+
+    # ScrapeGraphAI Provider Configuration
+    SCRAPEGRAPHAI_ENABLED: bool = True
+    SCRAPEGRAPHAI_PROVIDER: Optional[str] = "groq"  # "groq", "openai", "gemini", "ollama", "azure"
+    SCRAPEGRAPHAI_MODEL: Optional[str] = "groq/compound-mini"
+    SCRAPEGRAPHAI_API_KEY: Optional[str] = None
+    SCRAPEGRAPHAI_HEADLESS: bool = True
+    SCRAPEGRAPHAI_TIMEOUT: float = 60.0
+
+    model_config = SettingsConfigDict(case_sensitive=True, env_file=("backend/.env", ".env"), extra="ignore")
 
 settings = Settings()
+

@@ -4,14 +4,7 @@ from backend.app.models.domain import Product
 
 STOP_WORDS = {"the", "a", "an", "and", "or", "in", "on", "at", "to", "for", "with", "by", "of", "is", "it", "my", "your", "best", "top", "new", "2026", "review", "test"}
 
-KNOWN_ALIASES: Dict[str, str] = {
-    "hydroglow": "prod_01",
-    "titanflex": "prod_02",
-    "magsnap": "prod_03",
-    "matcha whisk": "prod_04",
-    "tactical fleece": "prod_05",
-    "aura ring": "prod_06"
-}
+KNOWN_ALIASES: Dict[str, str] = {}
 
 class MatchResult:
     def __init__(
@@ -64,47 +57,69 @@ class ProductMatchingEngine:
         raw_tokens = cleaned_text.split()
         meaningful_tokens = set(w for w in raw_tokens if w not in STOP_WORDS and len(w) > 1)
 
-        # 1. Exact alias dictionary match
-        for alias, pid in KNOWN_ALIASES.items():
-            if alias in cleaned_text:
-                target = next((p for p in catalog_products if p.id == pid), None)
-                if target:
-                    return MatchResult(
-                        product=target,
-                        confidence=0.98,
-                        match_type="matched",
-                        reason=f"Direct alias match for '{alias}'"
-                    )
+        # 1. Check for SKU or External ID exact matches
+        for p in catalog_products:
+            p_id_str = getattr(p, "id", "") or ""
+            ext_id = getattr(p, "external_product_id", "") or ""
+            if p_id_str and len(p_id_str) > 4 and p_id_str.lower() in cleaned_text:
+                return MatchResult(
+                    product=p,
+                    confidence=0.99,
+                    match_type="matched",
+                    reason=f"Exact product identifier match for '{p_id_str}'"
+                )
+            if ext_id and len(ext_id) > 4 and ext_id.lower() in cleaned_text:
+                return MatchResult(
+                    product=p,
+                    confidence=0.99,
+                    match_type="matched",
+                    reason=f"Exact external product ID match for '{ext_id}'"
+                )
 
-        # 2. Iterate catalog and calculate similarity weights
+        # 2. Iterate catalog and calculate dynamic similarity weights
         candidate_scores: List[Tuple[Product, float, List[str]]] = []
 
         for p in catalog_products:
             score = 0.0
             reasons = []
 
-            p_name_clean = re.sub(r'[^\w\s]', ' ', p.name.lower())
+            p_name = getattr(p, "name", None) or getattr(p, "title", "") or ""
+            p_name_clean = re.sub(r'[^\w\s]', ' ', p_name.lower())
             
             # Exact full name substring
-            if p_name_clean in cleaned_text:
+            if p_name_clean and len(p_name_clean) > 3 and p_name_clean in cleaned_text:
                 return MatchResult(
                     product=p,
                     confidence=0.99,
                     match_type="matched",
-                    reason=f"Exact canonical title match for '{p.name}'"
+                    reason=f"Exact canonical title match for '{p_name}'"
                 )
 
             # Name token overlap
-            p_tokens = set(w for w in p_name_clean.split() if w not in STOP_WORDS)
+            p_tokens = set(w for w in p_name_clean.split() if w not in STOP_WORDS and len(w) > 1)
             overlap = p_tokens.intersection(meaningful_tokens)
             if overlap:
                 overlap_ratio = len(overlap) / max(len(p_tokens), 1)
                 score += overlap_ratio * 40.0
                 reasons.append(f"Name tokens matched: {', '.join(overlap)}")
+                
+                # Multi-word continuous n-gram match
+                if len(overlap) >= 2 and overlap_ratio >= 0.5:
+                    score += 25.0
+                    reasons.append(f"High multi-token correlation ({overlap_ratio * 100:.0f}%)")
+
+            # Brand extraction and matching
+            brand = getattr(p, "brand", None) or (p_name.split()[0] if p_name else None)
+            if brand and len(brand) > 2:
+                brand_clean = brand.lower().strip()
+                if brand_clean not in STOP_WORDS and brand_clean in cleaned_text:
+                    score += 20.0
+                    reasons.append(f"Brand matched: '{brand}'")
 
             # Tags intersection
+            p_tags = getattr(p, "tags", []) or []
             matched_tags = []
-            for tag in p.tags:
+            for tag in p_tags:
                 tag_clean = re.sub(r'[^\w\s]', ' ', tag.lower())
                 tag_words = set(tag_clean.split())
                 if tag_words.intersection(meaningful_tokens):
@@ -112,16 +127,6 @@ class ProductMatchingEngine:
                     score += 15.0
             if matched_tags:
                 reasons.append(f"Tags matched: {', '.join(matched_tags[:2])}")
-
-            # Specific high-conviction keyword pairings
-            if p.id == "prod_01" and "serum" in meaningful_tokens and "lip" in meaningful_tokens:
-                score += 35.0
-            elif p.id == "prod_02" and ("running" in meaningful_tokens or "vest" in meaningful_tokens):
-                score += 35.0
-            elif p.id == "prod_03" and ("magsnap" in meaningful_tokens or "magsafe" in meaningful_tokens or "stand" in meaningful_tokens):
-                score += 35.0
-            elif p.id == "prod_04" and ("matcha" in meaningful_tokens or "whisk" in meaningful_tokens):
-                score += 35.0
 
             if score >= 30.0:
                 candidate_scores.append((p, score, reasons))

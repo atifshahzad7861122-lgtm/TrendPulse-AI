@@ -46,6 +46,9 @@ class LiveSignalItem(BaseModel):
     growth: str
     timestamp: str
     category: str
+    product_id: Optional[str] = None
+    product_name: Optional[str] = None
+    signal_value: Optional[str] = None
 
 class DashboardSummaryResponse(BaseModel):
     metrics: List[MetricCard]
@@ -53,6 +56,11 @@ class DashboardSummaryResponse(BaseModel):
     top_surging: List[Dict[str, Any]]
     total_trends_monitored: int
     system_status: str
+    is_live: bool = True
+    data_source: str = "daraz_live"  # "daraz_live", "database_cache", "none"
+    last_synced_at: Optional[str] = None
+    data_age_seconds: Optional[int] = None
+
 
 class ProductFilterRequest(BaseModel):
     category: Optional[str] = "all"

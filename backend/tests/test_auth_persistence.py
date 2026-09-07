@@ -35,7 +35,8 @@ def test_auth_registration_full_persistence_pipeline(clean_auth_state):
     data = res.json()["data"]
     assert data["email"] == test_email
     assert "user_id" in data
-    assert "verification_token" in data
+    assert "verification_token" not in data
+    assert "dev_verification_url" not in data
 
     # Verify User record
     user = user_repo.get_by_email(test_email)
@@ -43,6 +44,7 @@ def test_auth_registration_full_persistence_pipeline(clean_auth_state):
     assert user.full_name == "Jordan Peterson"
     assert user.is_verified is False
     assert user.is_active is True
+    assert user.verification_token is not None
     assert verify_password("StrongPassword123!", user.hashed_password)
 
     # Verify Workspace & Member record
@@ -59,7 +61,7 @@ def test_auth_registration_full_persistence_pipeline(clean_auth_state):
     assert st.email == test_email
 
     # Verify Email Verification Record
-    ev = auth_persistence_repo.get_email_verification(data["verification_token"])
+    ev = auth_persistence_repo.get_email_verification(user.verification_token)
     assert ev is not None
     assert ev.user_id == user.id
     assert ev.used_at is None
@@ -166,7 +168,13 @@ def test_auth_email_verification_lifecycle(clean_auth_state):
         "full_name": "Verification User",
         "terms_accepted": True
     })
-    token = reg_res.json()["data"]["verification_token"]
+    assert reg_res.status_code == 200
+    assert "verification_token" not in reg_res.json()["data"]
+
+    user = user_repo.get_by_email(test_email)
+    assert user is not None
+    token = user.verification_token
+    assert token is not None
 
     # Verify email
     v_res = client.post("/api/v1/auth/verify-email", json={"token": token})

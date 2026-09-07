@@ -40,11 +40,11 @@ def get_data_sources_config_status():
                 "language": settings.YOUTUBE_LANGUAGE
             },
             "platforms": {
-                "youtube": {"type": "real_api", "status": "CONNECTED", "live": is_yt_live},
-                "instagram": {"type": "mock", "status": "COMING_SOON", "live": False},
-                "tiktok": {"type": "mock", "status": "COMING_SOON", "live": False},
-                "facebook": {"type": "mock", "status": "COMING_SOON", "live": False},
-                "daraz": {"type": "mock", "status": "COMING_SOON", "live": False},
+                "youtube": {"type": "real_api", "status": "CONNECTED" if is_yt_live else "AVAILABLE", "live": is_yt_live},
+                "instagram": {"type": "unconnected", "status": "COMING_SOON", "live": False},
+                "tiktok": {"type": "unconnected", "status": "COMING_SOON", "live": False},
+                "facebook": {"type": "unconnected", "status": "COMING_SOON", "live": False},
+                "daraz": {"type": "scraper_engine", "status": "CONNECTED", "live": True},
             },
             "environment": settings.ENVIRONMENT
         }

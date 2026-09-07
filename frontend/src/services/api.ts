@@ -62,6 +62,14 @@ class ApiClient {
     });
   }
 
+  patch<T>(endpoint: string, body?: any, headers?: HeadersInit): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, {
+      method: "PATCH",
+      body: body ? JSON.stringify(body) : undefined,
+      headers,
+    });
+  }
+
   delete<T>(endpoint: string, headers?: HeadersInit): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, { method: "DELETE", headers });
   }

@@ -131,8 +131,10 @@ export const ReportsListPage: React.FC = () => {
                 </div>
 
                 <div className="mt-6 pt-4 border-t border-outline-variant/15 flex items-center justify-between">
-                  <div className="flex items-center gap-4 text-xs font-mono-data text-on-surface-variant">
-                    <span>{rep.total_signals_analyzed.toLocaleString()} signals</span>
+                  <div className="flex flex-wrap items-center gap-3 text-xs font-mono-data text-on-surface-variant">
+                    <span>{rep.total_signals_analyzed > 0 ? `${rep.total_signals_analyzed.toLocaleString()} signals` : "0 signals"}</span>
+                    <span>•</span>
+                    <span>{rep.products_evaluated ?? 0} prods</span>
                     <span>•</span>
                     <span className="text-primary">{rep.high_conviction_count} Convictions</span>
                   </div>

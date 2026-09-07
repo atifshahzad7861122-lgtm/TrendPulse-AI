@@ -1,0 +1,13 @@
+{
+  "include": [
+    "backend",
+    "Daraz Scrapper",
+    "scripts"
+  ],
+  "extraPaths": [
+    ".",
+    "backend",
+    "Daraz Scrapper"
+  ],
+  "pythonVersion": "3.11"
+}

@@ -12,6 +12,8 @@ from backend.app.main import app
 client = TestClient(app)
 
 def get_auth_token(email="limit_tester@trendpulse.ai"):
+    from backend.app.api.deps import get_user_repository
+    user_repo = get_user_repository()
     reg = client.post("/api/v1/auth/register", json={
         "full_name": "Limit Tester",
         "email": email,
@@ -19,9 +21,9 @@ def get_auth_token(email="limit_tester@trendpulse.ai"):
         "confirm_password": "Password123!",
         "terms_accepted": True
     })
-    token = reg.json().get("data", {}).get("verification_token")
-    if token:
-        client.post("/api/v1/auth/verify-email", json={"token": token})
+    user = user_repo.get_by_email(email)
+    if user and user.verification_token:
+        client.post("/api/v1/auth/verify-email", json={"token": user.verification_token})
     
     login = client.post("/api/v1/auth/login", json={
         "email": email,

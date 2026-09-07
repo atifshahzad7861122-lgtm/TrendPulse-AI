@@ -1,0 +1,28 @@
+# Reference and Research Repositories (Read-only)
+_reference_repos/
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+
+# Environment and Secrets
+.env
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local databases & scrapers runtime data
+*.db
+*.sqlite3
+checkpoints/
+data/
+logs/
+.playwright/
