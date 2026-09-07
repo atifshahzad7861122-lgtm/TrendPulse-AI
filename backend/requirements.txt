@@ -14,3 +14,5 @@ scrapegraphai>=1.50.0
 langchain-google-genai>=2.0.0
 langchain-groq>=0.2.0
 groq>=0.18.0
+psycopg2-binary>=2.9.9
+playwright>=1.40.0

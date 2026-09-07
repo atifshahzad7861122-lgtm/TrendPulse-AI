@@ -10,11 +10,11 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
     ENVIRONMENT: str = "development"  # "development", "staging", "production"
     CORS_ORIGINS: List[str] = [
+        "https://trend-pulse-ai-three.vercel.app",
         "http://localhost:5173",
         "http://127.0.0.1:5173",
         "http://localhost:3000",
         "http://127.0.0.1:3000",
-        "*"
     ]
 
     # Database & Storage Backend Configuration
