@@ -1,12 +1,21 @@
-from typing import Optional
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
+from typing import Optional, Dict, Any
+import logging
+from sqlalchemy import create_engine, Engine
+from sqlalchemy.orm import scoped_session, sessionmaker, Session
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, AsyncEngine
-from backend.app.db.connection import get_async_engine
+from backend.app.db.connection import (
+    get_async_engine,
+    normalize_sync_database_url,
+    sanitize_db_url_for_logging
+)
 from backend.app.core.config import settings
 
+logger = logging.getLogger("trendpulse.db")
+
 _async_session_factory: Optional[async_sessionmaker[AsyncSession]] = None
-_sync_session_factory: Optional[sessionmaker[Session]] = None
+_sync_engine: Optional[Engine] = None
+_sync_session_factory: Optional[scoped_session[Session]] = None
+
 
 def get_async_session_factory(engine: Optional[AsyncEngine] = None) -> async_sessionmaker[AsyncSession]:
     """
@@ -25,12 +34,41 @@ def get_async_session_factory(engine: Optional[AsyncEngine] = None) -> async_ses
     )
     return _async_session_factory
 
-from sqlalchemy.pool import NullPool
-from sqlalchemy.orm import scoped_session, sessionmaker, Session
+def get_sync_engine(database_url: Optional[str] = None) -> Optional[Engine]:
+    """
+    Retrieves or creates the application singleton synchronous Engine (psycopg2).
+    """
+    global _sync_engine
+    if _sync_engine is not None and database_url is None:
+        return _sync_engine
 
-_sync_session_factory: Optional[scoped_session[Session]] = None
+    raw_url = database_url or getattr(settings, "DATABASE_URL", None)
+    if not raw_url:
+        return None
 
-def get_sync_session_factory() -> scoped_session[Session]:
+    sync_url = normalize_sync_database_url(raw_url)
+    sanitized = sanitize_db_url_for_logging(sync_url)
+    logger.info(f"Initializing PostgreSQL SyncEngine (psycopg2): {sanitized}")
+
+    engine_kwargs: dict = {
+        "echo": settings.DB_ECHO,
+        "pool_pre_ping": True,
+    }
+
+    if "sqlite" in sync_url:
+        from sqlalchemy.pool import StaticPool
+        engine_kwargs["poolclass"] = StaticPool
+        engine_kwargs["connect_args"] = {"check_same_thread": False}
+    else:
+        engine_kwargs["pool_size"] = settings.DB_POOL_SIZE
+        engine_kwargs["max_overflow"] = settings.DB_MAX_OVERFLOW
+        engine_kwargs["pool_timeout"] = settings.DB_POOL_TIMEOUT
+        engine_kwargs["pool_recycle"] = settings.DB_POOL_RECYCLE
+
+    _sync_engine = create_engine(sync_url, **engine_kwargs)
+    return _sync_engine
+
+def get_sync_session_factory() -> Optional[scoped_session[Session]]:
     """
     Retrieves or creates the synchronous scoped session factory for PostgreSQL repositories.
     """
@@ -38,15 +76,10 @@ def get_sync_session_factory() -> scoped_session[Session]:
     if _sync_session_factory is not None:
         return _sync_session_factory
 
-    raw_url = getattr(settings, "DATABASE_URL", None) or ""
-    if raw_url.startswith("postgresql+asyncpg://"):
-        sync_url = "postgresql://" + raw_url[len("postgresql+asyncpg://"):]
-    elif raw_url.startswith("sqlite+aiosqlite://"):
-        sync_url = "sqlite://" + raw_url[len("sqlite+aiosqlite://"):]
-    else:
-        sync_url = raw_url
+    engine = get_sync_engine()
+    if not engine:
+        return None
 
-    engine = create_engine(sync_url, poolclass=NullPool)
     session_factory = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     _sync_session_factory = scoped_session(session_factory)
     return _sync_session_factory
@@ -57,14 +90,34 @@ def get_sync_session() -> Optional[Session]:
         return None
     try:
         factory = get_sync_session_factory()
-        return factory()
-    except Exception:
+        if not factory:
+            return None
+        session = factory()
+        if session.is_active:
+            trans = session.get_transaction()
+            if trans and not trans.is_active:
+                session.rollback()
+        return session
+    except Exception as e:
+        logger.error(f"Failed to obtain sync database session: {type(e).__name__}")
         return None
 
 def reset_session_factory() -> None:
-    """Resets the singleton session factory for testing."""
-    global _async_session_factory, _sync_session_factory
+    """Resets the singleton session factory and engines for testing."""
+    global _async_session_factory, _sync_session_factory, _sync_engine
+    if _sync_session_factory is not None:
+        try:
+            _sync_session_factory.remove()
+        except Exception:
+            pass
+    if _sync_engine is not None:
+        try:
+            _sync_engine.dispose()
+        except Exception:
+            pass
     _async_session_factory = None
     _sync_session_factory = None
+    _sync_engine = None
+
 
 

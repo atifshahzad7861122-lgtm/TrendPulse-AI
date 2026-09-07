@@ -12,6 +12,7 @@ _async_engine: Optional[AsyncEngine] = None
 def normalize_async_database_url(url: str) -> str:
     """
     Normalizes standard PostgreSQL URLs to async driver protocols.
+    - postgresql+psycopg2:// -> postgresql+asyncpg://
     - postgresql:// -> postgresql+asyncpg://
     - postgres:// -> postgresql+asyncpg://
     - sqlite:// -> sqlite+aiosqlite://
@@ -19,13 +20,54 @@ def normalize_async_database_url(url: str) -> str:
     if not url:
         return ""
     clean = url.strip()
-    if clean.startswith("postgres://"):
+    if clean.startswith("postgresql+psycopg2://"):
+        clean = "postgresql+asyncpg://" + clean[len("postgresql+psycopg2://"):]
+    elif clean.startswith("postgres://"):
         clean = "postgresql+asyncpg://" + clean[len("postgres://"):]
     elif clean.startswith("postgresql://") and not clean.startswith("postgresql+"):
         clean = "postgresql+asyncpg://" + clean[len("postgresql://"):]
     elif clean.startswith("sqlite://") and not clean.startswith("sqlite+"):
         clean = "sqlite+aiosqlite://" + clean[len("sqlite://"):]
+
+    # Normalize ?sslmode= to ?ssl= for asyncpg
+    if "sqlite" not in clean:
+        if "?sslmode=" in clean:
+            clean = clean.replace("?sslmode=", "?ssl=")
+        elif "&sslmode=" in clean:
+            clean = clean.replace("&sslmode=", "&ssl=")
+
     return clean
+
+def normalize_sync_database_url(url: str) -> str:
+    """
+    Normalizes database URLs to synchronous driver protocols for SQLAlchemy (psycopg2).
+    - postgresql+asyncpg:// -> postgresql+psycopg2://
+    - postgres:// -> postgresql+psycopg2://
+    - postgresql:// -> postgresql+psycopg2://
+    - sqlite+aiosqlite:// -> sqlite://
+    - sqlite:// -> sqlite://
+    """
+    if not url:
+        return ""
+    clean = url.strip()
+    if clean.startswith("postgresql+asyncpg://"):
+        clean = "postgresql+psycopg2://" + clean[len("postgresql+asyncpg://"):]
+    elif clean.startswith("postgres://"):
+        clean = "postgresql+psycopg2://" + clean[len("postgres://"):]
+    elif clean.startswith("postgresql://") and not clean.startswith("postgresql+"):
+        clean = "postgresql+psycopg2://" + clean[len("postgresql://"):]
+    elif clean.startswith("sqlite+aiosqlite://"):
+        clean = "sqlite://" + clean[len("sqlite+aiosqlite://"):]
+
+    # Normalize ?ssl= to ?sslmode= for psycopg2
+    if "sqlite" not in clean:
+        if "?ssl=" in clean:
+            clean = clean.replace("?ssl=", "?sslmode=")
+        elif "&ssl=" in clean:
+            clean = clean.replace("&ssl=", "&sslmode=")
+
+    return clean
+
 
 def sanitize_db_url_for_logging(url: str) -> str:
     """

@@ -11,10 +11,27 @@ from fastapi.middleware.cors import CORSMiddleware
 from backend.app.core.config import settings
 from backend.app.api.v1.router import api_router
 
+import logging
 from contextlib import asynccontextmanager
+from fastapi import Request
+from fastapi.responses import JSONResponse
+
+logger = logging.getLogger("trendpulse.api")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Auto-initialize database tables if PostgreSQL backend is enabled
+    try:
+        backend_mode = getattr(settings, "DATA_BACKEND", "in_memory").lower()
+        if backend_mode == "postgres" and getattr(settings, "DATABASE_URL", None):
+            from backend.app.db.session import get_sync_engine
+            from backend.app.db.models import Base
+            engine = get_sync_engine()
+            if engine:
+                Base.metadata.create_all(bind=engine)
+    except Exception as e:
+        logger.warning(f"Database schema check during startup: {type(e).__name__}")
+
     try:
         from backend.app.api.deps import get_scraper_service
         service = get_scraper_service()
@@ -32,6 +49,23 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+# Global exception handler to guarantee CORS headers on unhandled errors
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Unhandled exception on [{request.method}] {request.url.path}: {type(exc).__name__}: {str(exc)}")
+    origin = request.headers.get("origin")
+    headers = {}
+    if origin and (origin in settings.CORS_ORIGINS or "*" in settings.CORS_ORIGINS):
+        headers["Access-Control-Allow-Origin"] = origin
+        headers["Access-Control-Allow-Credentials"] = "true"
+        headers["Access-Control-Allow-Headers"] = "*"
+        headers["Access-Control-Allow-Methods"] = "*"
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error occurred. Please check system logs."},
+        headers=headers
+    )
+
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
@@ -40,6 +74,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # Health endpoints
 @app.get("/health")
