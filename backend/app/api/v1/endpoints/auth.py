@@ -67,7 +67,7 @@ def verify_email(
     auth_service: AuthService = Depends(get_auth_service)
 ):
     ip, agent = _get_client_info(request)
-    data = auth_service.verify_email(req.token, ip_address=ip, user_agent=agent)
+    data = auth_service.verify_email(req.token, email=req.email, ip_address=ip, user_agent=agent)
     return ResponseModel(
         success=True,
         message="Email verified successfully. Proceed to workspace setup.",

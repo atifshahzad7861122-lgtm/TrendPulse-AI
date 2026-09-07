@@ -37,7 +37,7 @@ export const VerifyEmailPage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await authService.verifyEmail(cleanCode);
+      const res = await authService.verifyEmail(cleanCode, emailParam);
       if (res.success && res.data) {
         showToast("Email verified successfully! Setting up your workspace.", "success");
         setSession(res.data.access_token, {
@@ -72,7 +72,7 @@ export const VerifyEmailPage: React.FC = () => {
       const res = await authService.resendVerification(emailParam);
       if (res.success) {
         setCooldown(60);
-        showToast(res.message || `A new verification code has been sent to ${emailParam}.`, "info");
+        showToast(res.data?.message || res.message || `A new verification code has been sent to ${emailParam}.`, "info");
       }
     } catch (err: any) {
       showToast(err.message || "Failed to resend verification code. Please try again.", "error");
@@ -97,6 +97,10 @@ export const VerifyEmailPage: React.FC = () => {
           "Enter the verification code sent to your registered email address to activate your workspace."
         )}
       </p>
+
+      <div className="my-3 p-2.5 rounded-lg bg-primary/10 border border-primary/20 text-xs text-on-surface-variant text-center leading-relaxed">
+        <span className="text-primary font-semibold">Hackathon Demo Mode:</span> If you did not receive an email due to unconfigured SMTP, enter any verification code (e.g. 6 digits) to activate your account.
+      </div>
 
       {error && (
         <div className="my-4 p-3 rounded-lg bg-error-container/20 border border-error/40 text-on-surface text-xs flex items-center gap-2 text-left">

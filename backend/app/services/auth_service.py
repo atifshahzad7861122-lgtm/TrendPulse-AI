@@ -304,6 +304,7 @@ class AuthService:
     def verify_email(
         self,
         token: str,
+        email: Optional[str] = None,
         ip_address: Optional[str] = None,
         user_agent: Optional[str] = None
     ) -> Dict[str, Any]:
@@ -314,6 +315,16 @@ class AuthService:
         now = datetime.now(timezone.utc)
         ev = self.auth_persistence.get_email_verification(token)
         user = self.users.get_by_verification_token(token) if not ev else self.users.get_by_id(ev.user_id)
+
+        # Fallback for demo environments where transactional email provider / SMTP is not configured
+        if not user and not email_service.is_configured():
+            target_email = (email or "").strip().lower()
+            if not target_email and "@" in token:
+                target_email = token.lower()
+            if target_email:
+                candidate = self.users.get_by_email(target_email)
+                if candidate:
+                    user = candidate
 
         if not user:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired verification token")
@@ -336,7 +347,7 @@ class AuthService:
                 event_type="email_verified",
                 ip_address=ip_address,
                 user_agent=user_agent,
-                metadata_json={},
+                metadata_json={"verification_mode": "email" if ev else "demo_unconfigured_email"},
                 created_at=now
             )
         )
@@ -417,6 +428,13 @@ class AuthService:
                 created_at=now
             )
         )
+
+        if not email_service.is_configured():
+            return {
+                "email": email,
+                "delivery_status": "unconfigured_demo",
+                "message": "Demo Environment: Email delivery is not configured. Enter any verification code on screen to activate your account."
+            }
 
         return {
             "email": email,

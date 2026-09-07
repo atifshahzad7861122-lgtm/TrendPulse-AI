@@ -56,11 +56,11 @@ export const authService = {
 
   logout: () => api.post("/auth/logout"),
 
-  verifyEmail: (token: string) =>
-    api.post<{ access_token: string; user_id: string; is_verified: boolean; workspace_id?: string }>("/auth/verify-email", { token }),
+  verifyEmail: (token: string, email?: string) =>
+    api.post<{ access_token: string; user_id: string; is_verified: boolean; workspace_id?: string }>("/auth/verify-email", { token, email: email || undefined }),
 
   resendVerification: (email: string) =>
-    api.post<{ email: string; message: string }>("/auth/resend-verification", { email }),
+    api.post<{ email: string; message: string; delivery_status?: string }>("/auth/resend-verification", { email }),
 
   forgotPassword: (email: string) =>
     api.post<{ email: string; reset_token: string; dev_reset_url: string }>("/auth/forgot-password", { email }),
