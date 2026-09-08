@@ -20,6 +20,12 @@ class Settings(BaseSettings):
     # Email & Verification Configuration (Demo/Hackathon flag)
     EMAIL_VERIFICATION_ENABLED: bool = False
 
+    # Hackathon Demo Access Configuration
+    DEMO_MODE: bool = True
+    DEMO_USER_ID: str = "usr_demo_101"
+    DEMO_USER_EMAIL: str = "judge@trendpulse.demo"
+    DEMO_WORKSPACE_ID: str = "ws_demo_101"
+
     # Database & Storage Backend Configuration
     DATABASE_URL: Optional[str] = None
     SUPABASE_PROJECT_ID: Optional[str] = None

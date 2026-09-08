@@ -1,5 +1,8 @@
 from typing import Optional
+from datetime import datetime, timedelta, timezone
+from jose import jwt
 from fastapi import APIRouter, Depends, Request, Header, HTTPException, status
+from backend.app.core.config import settings
 from backend.app.models.domain import User
 from backend.app.services.auth_service import AuthService
 from backend.app.repositories.base import UserRepository, SettingsRepository
@@ -17,6 +20,48 @@ def _get_client_info(request: Request):
     ip = request.client.host if request.client else None
     agent = request.headers.get("user-agent")
     return ip, agent
+
+@router.post("/demo-session", response_model=ResponseModel[TokenResponse])
+def create_demo_session(request: Request):
+    """
+    Creates a temporary read-only demo session for hackathon evaluation.
+    Only available when DEMO_MODE=True.
+    """
+    if not getattr(settings, "DEMO_MODE", False):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Public demo mode is currently disabled."
+        )
+
+    expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    demo_user_id = getattr(settings, "DEMO_USER_ID", "usr_demo_101")
+    demo_email = getattr(settings, "DEMO_USER_EMAIL", "judge@trendpulse.demo")
+    demo_workspace_id = getattr(settings, "DEMO_WORKSPACE_ID", "ws_demo_101")
+
+    payload = {
+        "sub": demo_user_id,
+        "email": demo_email,
+        "role": "demo",
+        "is_demo": True,
+        "exp": expire,
+    }
+    token = jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+
+    return ResponseModel(
+        success=True,
+        message="Demo session initialized successfully",
+        data=TokenResponse(
+            access_token=token,
+            token_type="bearer",
+            user_id=demo_user_id,
+            email=demo_email,
+            full_name="Hackathon Judge (Demo Mode)",
+            is_verified=True,
+            workspace_id=demo_workspace_id,
+            role="demo",
+            avatar_url="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
+        )
+    )
 
 @router.post("/register", response_model=ResponseModel[dict])
 def register(

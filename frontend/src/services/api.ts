@@ -1,16 +1,15 @@
 import type { ApiResponse } from "../types";
 
-// Resolve API base URL: prioritize same-origin /api/v1 for production deployments
+// Resolve API base URL: connects to Railway FastAPI production backend
 const resolveApiBaseUrl = (): string => {
   const envUrl = import.meta.env.VITE_API_URL;
-  // In production, ignore stale Railway URL and default to same-origin /api/v1
-  if (import.meta.env.PROD) {
-    if (envUrl && !envUrl.includes("railway.app")) {
-      return envUrl;
-    }
-    return "/api/v1";
+  if (envUrl) {
+    return envUrl.replace(/\/+$/, "");
   }
-  return envUrl || "http://localhost:8000/api/v1";
+  if (import.meta.env.PROD) {
+    return "https://trendpulse-ai-production.up.railway.app/api/v1";
+  }
+  return "http://localhost:8000/api/v1";
 };
 
 const API_BASE_URL = resolveApiBaseUrl();

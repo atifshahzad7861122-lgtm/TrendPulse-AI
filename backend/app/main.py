@@ -75,6 +75,47 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Demo Mode Read-Only Middleware
+@app.middleware("http")
+async def demo_mode_read_only_middleware(request: Request, call_next):
+    """
+    Enforces strict read-only access for public demo sessions.
+    Rejects any mutating operations (POST, PUT, PATCH, DELETE) with HTTP 403.
+    """
+    if request.method.upper() in ("POST", "PUT", "PATCH", "DELETE"):
+        path = request.url.path
+        # Allow obtaining demo session and normal logout
+        if not path.endswith("/auth/demo-session") and not path.endswith("/auth/logout"):
+            auth_header = request.headers.get("authorization") or request.headers.get("Authorization") or ""
+            if auth_header.startswith("Bearer ") or auth_header.startswith("bearer "):
+                token = auth_header.split(" ", 1)[1].strip()
+                try:
+                    from jose import jwt
+                    payload = jwt.decode(
+                        token,
+                        settings.SECRET_KEY,
+                        algorithms=[settings.ALGORITHM]
+                    )
+                    if payload.get("role") == "demo" or payload.get("is_demo") is True:
+                        origin = request.headers.get("origin")
+                        headers = {}
+                        if origin and (origin in settings.CORS_ORIGINS or "*" in settings.CORS_ORIGINS):
+                            headers["Access-Control-Allow-Origin"] = origin
+                            headers["Access-Control-Allow-Credentials"] = "true"
+                            headers["Access-Control-Allow-Headers"] = "*"
+                            headers["Access-Control-Allow-Methods"] = "*"
+                        return JSONResponse(
+                            status_code=403,
+                            content={
+                                "detail": "Demo mode is read-only. Modifying data or executing mutations is not permitted."
+                            },
+                            headers=headers
+                        )
+                except Exception:
+                    pass
+
+    return await call_next(request)
+
 
 # Health endpoints
 @app.get("/health")

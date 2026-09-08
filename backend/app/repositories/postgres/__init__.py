@@ -4797,7 +4797,11 @@ class PostgresMarketIntelligenceRepository(MarketIntelligenceRepository):
                 created_at=snapshot.created_at
             )
             self.session.add(m)
-        self.session.commit()
+        try:
+            self.session.commit()
+        except Exception:
+            self.session.rollback()
+            raise
         return snapshot
 
     def get_latest_snapshot(self, product_id: str, marketplace: Optional[str] = None) -> Optional[MarketIntelligenceSnapshot]:

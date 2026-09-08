@@ -8,6 +8,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   loading: boolean;
   login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
+  loginDemo: () => Promise<void>;
   logout: () => void;
   setSession: (token: string, user: User) => void;
   refreshProfile: () => Promise<void>;
@@ -81,6 +82,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const loginDemo = async () => {
+    const res = await authService.getDemoSession();
+    if (res.success && res.data) {
+      const data = res.data;
+      localStorage.setItem("trendpulse_token", data.access_token);
+      setToken(data.access_token);
+      setUser({
+        id: data.user_id,
+        email: data.email,
+        full_name: data.full_name,
+        is_verified: data.is_verified,
+        workspace_id: data.workspace_id,
+        role: data.role,
+        avatar_url: data.avatar_url,
+      });
+    } else {
+      throw new Error(res.message || "Failed to initialize demo session");
+    }
+  };
+
   useEffect(() => {
     refreshProfile();
   }, [refreshProfile]);
@@ -93,6 +114,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAuthenticated: !!user,
         loading,
         login,
+        loginDemo,
         logout,
         setSession,
         refreshProfile,

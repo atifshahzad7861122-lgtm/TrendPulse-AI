@@ -8,12 +8,12 @@ Enforces zero synthetic data and strict provenance tracking.
 
 import uuid
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import List, Optional, Dict, Any, Tuple
 
 from backend.app.models.domain import (
     MarketplaceProduct, UnifiedProduct, ProductMarketSnapshot,
-    MarketIntelligenceSnapshot, SocialSignal
+    MarketIntelligenceSnapshot, SocialSignal, Product
 )
 from backend.app.schemas.market_intelligence import (
     MarketScoreResponse, DemandIntelligenceResponse, TrendVelocityResponse,
@@ -25,7 +25,7 @@ from backend.app.schemas.market_intelligence import (
 )
 from backend.app.repositories.base import (
     MarketplaceProductRepository, UnifiedProductRepository, ScraperRepository,
-    MarketIntelligenceRepository
+    MarketIntelligenceRepository, ProductRepository
 )
 from backend.app.repositories.in_memory import market_intelligence_repo
 from backend.app.domain.market_score_engine import MarketScoreEngine
@@ -40,6 +40,71 @@ from backend.app.services.agents.data_quality.agent import DataQualityAgent
 logger = logging.getLogger("trendpulse.market_intelligence")
 
 
+def _domain_product_to_marketplace_product(p: Product) -> Tuple[MarketplaceProduct, List[ProductMarketSnapshot]]:
+    """Converts a persisted domain Product into a MarketplaceProduct and corresponding historical snapshots."""
+    price = 0.0
+    if p.historical_prices and len(p.historical_prices) > 0:
+        price = float(p.historical_prices[-1].get("price", 0.0))
+    elif p.price_range:
+        try:
+            parts = [float(x.replace("$", "").replace(",", "").strip()) for x in p.price_range.split("-")]
+            price = sum(parts) / len(parts)
+        except Exception:
+            price = 25.0
+
+    original_price = price
+    if p.historical_prices and len(p.historical_prices) > 0:
+        original_price = float(p.historical_prices[0].get("price", price))
+
+    plat = (p.primary_platform or "Daraz").lower()
+    now = datetime.now(timezone.utc)
+    snaps: List[ProductMarketSnapshot] = []
+    if p.historical_scores:
+        for idx, s in enumerate(p.historical_scores):
+            obs_time = now - timedelta(days=(len(p.historical_scores) - idx))
+            vol = s.get("volume", p.signals_count or 100)
+            sc = s.get("score", 50.0)
+            snaps.append(
+                ProductMarketSnapshot(
+                    id=f"snap_{p.id}_{idx}",
+                    product_id=p.id,
+                    platform=plat,
+                    price=price,
+                    original_price=original_price,
+                    discount=0.0,
+                    rating=round((sc / 100.0) * 5.0, 1),
+                    review_count=vol,
+                    stock_status="in_stock",
+                    observed_at=obs_time,
+                    created_at=obs_time
+                )
+            )
+
+    mp = MarketplaceProduct(
+        id=p.id,
+        platform=plat,
+        product_id=p.id,
+        product_name=p.name,
+        product_url=f"https://www.{plat}.com/products/{p.id}",
+        image_url=p.image_url,
+        category=p.category,
+        price=price,
+        original_price=original_price,
+        discount_percentage=max(0.0, round(((original_price - price) / original_price) * 100, 1)) if original_price > price else 0.0,
+        discount_label=f"{round(((original_price - price) / original_price) * 100)}% OFF" if original_price > price else None,
+        rating=round(p.sentiment_score * 5.0, 1) if p.sentiment_score else 4.5,
+        review_count=p.volume or p.signals_count or 100,
+        stock_status="in_stock" if p.status == "Active" else "out_of_stock",
+        in_stock=p.status == "Active",
+        currency="USD",
+        location="Global",
+        created_at=p.created_at,
+        updated_at=p.created_at,
+        raw_source_data={"snapshots": snaps}
+    )
+    return mp, snaps
+
+
 class MarketIntelligenceService:
     """
     Central orchestration service for Phase 3 Market Intelligence.
@@ -52,7 +117,8 @@ class MarketIntelligenceService:
         social_service: Optional[SocialIntelligenceService] = None,
         ai_analyst: Optional[AIMarketAnalystService] = None,
         dq_agent: Optional[DataQualityAgent] = None,
-        market_intel_repo: Optional[MarketIntelligenceRepository] = None
+        market_intel_repo: Optional[MarketIntelligenceRepository] = None,
+        product_repo: Optional[ProductRepository] = None
     ):
         self.marketplace_repo = marketplace_repo
         self.unified_repo = unified_repo
@@ -60,6 +126,7 @@ class MarketIntelligenceService:
         self.ai_analyst = ai_analyst or AIMarketAnalystService()
         self.dq_agent = dq_agent
         self.market_intel_repo = market_intel_repo or market_intelligence_repo
+        self.product_repo = product_repo
         self._intelligence_snapshots: Dict[str, MarketIntelligenceSnapshot] = {}
 
     def get_product_intelligence(
@@ -90,6 +157,19 @@ class MarketIntelligenceService:
                     mp_prod = p
                     break
 
+        if not mp_prod and self.product_repo:
+            try:
+                base_prod = self.product_repo.get_by_id(product_id) or self.product_repo.get_by_id(clean_id)
+                if not base_prod:
+                    for bp in self.product_repo.list():
+                        if bp.id == product_id or bp.id == clean_id:
+                            base_prod = bp
+                            break
+                if base_prod:
+                    mp_prod, _ = _domain_product_to_marketplace_product(base_prod)
+            except Exception as e:
+                logger.warning(f"Error querying product_repo in get_product_intelligence: {e}")
+
         if not mp_prod:
             return None
 
@@ -106,6 +186,9 @@ class MarketIntelligenceService:
                 )
             except Exception as e:
                 logger.debug(f"Error fetching snapshots for {mp_prod.product_id}: {e}")
+
+        if not snapshots and hasattr(mp_prod, "raw_source_data") and mp_prod.raw_source_data and "snapshots" in mp_prod.raw_source_data:
+            snapshots = mp_prod.raw_source_data["snapshots"]
 
         # 3. Deterministic Analytics Calculations
         # A. Trend Velocity
@@ -402,6 +485,24 @@ class MarketIntelligenceService:
             limit=limit * 2
         )
 
+        if not products and self.product_repo:
+            try:
+                base_list = self.product_repo.list()
+                filtered = []
+                for bp in base_list:
+                    plat = (bp.primary_platform or "daraz").lower()
+                    if marketplace and marketplace != "all" and plat != marketplace.lower():
+                        continue
+                    if category and category != "all" and category.lower() not in bp.category.lower():
+                        continue
+                    if keyword and keyword.strip() and keyword.lower() not in bp.name.lower():
+                        continue
+                    mp, _ = _domain_product_to_marketplace_product(bp)
+                    filtered.append(mp)
+                products = filtered
+            except Exception as e:
+                logger.warning(f"Error querying product_repo fallback in market overview: {e}")
+
         if not products:
             return MarketOverviewResponse(
                 average_market_score=0.0,
@@ -495,6 +596,12 @@ class MarketIntelligenceService:
         Aggregates real category-level intelligence strictly from observed products.
         """
         all_prods = self.marketplace_repo.list_products(limit=500)
+        if not all_prods and self.product_repo:
+            try:
+                all_prods = [_domain_product_to_marketplace_product(bp)[0] for bp in self.product_repo.list()]
+            except Exception as e:
+                logger.warning(f"Error querying product_repo in category intelligence: {e}")
+
         cat_map: Dict[str, List[MarketplaceProduct]] = {}
         for p in all_prods:
             cat = p.category or "General"
@@ -551,6 +658,15 @@ class MarketIntelligenceService:
 
         for mkt in marketplaces:
             prods = self.marketplace_repo.list_products(platform=mkt, limit=500)
+            if not prods and self.product_repo:
+                try:
+                    prods = [
+                        _domain_product_to_marketplace_product(bp)[0]
+                        for bp in self.product_repo.list()
+                        if (bp.primary_platform or "daraz").lower() == mkt.lower()
+                    ]
+                except Exception:
+                    prods = []
             if not prods:
                 comps.append(
                     MarketplaceComparisonResponse(

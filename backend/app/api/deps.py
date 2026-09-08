@@ -493,6 +493,27 @@ def get_current_user(
                 detail="Invalid authentication token",
                 headers={"WWW-Authenticate": "Bearer"},
             )
+        # Check for demo mode session
+        if payload.get("role") == "demo" or payload.get("is_demo") is True:
+            if not getattr(settings, "DEMO_MODE", False):
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Demo access is currently disabled",
+                    headers={"WWW-Authenticate": "Bearer"},
+                )
+            from datetime import datetime, timezone
+            return User(
+                id=user_id or getattr(settings, "DEMO_USER_ID", "usr_demo_101"),
+                email=payload.get("email", getattr(settings, "DEMO_USER_EMAIL", "judge@trendpulse.demo")),
+                full_name="Hackathon Judge (Demo Mode)",
+                hashed_password="",
+                role="demo",
+                workspace_id=getattr(settings, "DEMO_WORKSPACE_ID", "ws_demo_101"),
+                is_active=True,
+                is_verified=True,
+                avatar_url="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+                created_at=datetime.now(timezone.utc)
+            )
     except JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -518,6 +539,22 @@ def get_current_user_optional(
         user_id: str = payload.get("sub")
         if user_id is None:
             return None
+        if payload.get("role") == "demo" or payload.get("is_demo") is True:
+            if not getattr(settings, "DEMO_MODE", False):
+                return None
+            from datetime import datetime, timezone
+            return User(
+                id=user_id or getattr(settings, "DEMO_USER_ID", "usr_demo_101"),
+                email=payload.get("email", getattr(settings, "DEMO_USER_EMAIL", "judge@trendpulse.demo")),
+                full_name="Hackathon Judge (Demo Mode)",
+                hashed_password="",
+                role="demo",
+                workspace_id=getattr(settings, "DEMO_WORKSPACE_ID", "ws_demo_101"),
+                is_active=True,
+                is_verified=True,
+                avatar_url="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+                created_at=datetime.now(timezone.utc)
+            )
         return users.get_by_id(user_id)
     except JWTError:
         return None
@@ -607,7 +644,8 @@ def get_market_intelligence_service(
     social_service: SocialIntelligenceService = Depends(get_social_intelligence_service),
     ai_analyst: AIMarketAnalystService = Depends(get_ai_market_analyst_service),
     dq_agent: DataQualityAgent = Depends(get_data_quality_agent),
-    market_intel_repo: MarketIntelligenceRepository = Depends(get_market_intelligence_repository)
+    market_intel_repo: MarketIntelligenceRepository = Depends(get_market_intelligence_repository),
+    product_repo: ProductRepository = Depends(get_product_repository)
 ) -> MarketIntelligenceService:
     if not hasattr(marketplace_repo, "get_product"):
         marketplace_repo = get_marketplace_product_repository()
@@ -621,6 +659,8 @@ def get_market_intelligence_service(
         dq_agent = get_data_quality_agent()
     if not hasattr(market_intel_repo, "save_snapshot"):
         market_intel_repo = get_market_intelligence_repository()
+    if not hasattr(product_repo, "list"):
+        product_repo = get_product_repository()
 
     return MarketIntelligenceService(
         marketplace_repo=marketplace_repo,
@@ -628,7 +668,8 @@ def get_market_intelligence_service(
         social_service=social_service,
         ai_analyst=ai_analyst,
         dq_agent=dq_agent,
-        market_intel_repo=market_intel_repo
+        market_intel_repo=market_intel_repo,
+        product_repo=product_repo
     )
 
 

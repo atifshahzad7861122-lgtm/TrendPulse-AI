@@ -54,6 +54,9 @@ export const authService = {
   login: (data: { email: string; password: string; remember_me?: boolean }) =>
     api.post<{ access_token: string; user_id: string; email: string; full_name: string; is_verified: boolean; workspace_id?: string; role: string; avatar_url?: string }>("/auth/login", data),
 
+  getDemoSession: () =>
+    api.post<{ access_token: string; user_id: string; email: string; full_name: string; is_verified: boolean; workspace_id?: string; role: string; avatar_url?: string }>("/auth/demo-session"),
+
   logout: () => api.post("/auth/logout"),
 
   verifyEmail: (token: string, email?: string) =>

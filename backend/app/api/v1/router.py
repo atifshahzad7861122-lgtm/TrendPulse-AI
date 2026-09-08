@@ -28,6 +28,7 @@ api_router.include_router(public_data_quality.router, prefix="/public/data-quali
 api_router.include_router(llm.router, prefix="/llm", tags=["llm"])
 api_router.include_router(intelligence.router, prefix="/products/intelligence", tags=["intelligence"])
 api_router.include_router(market_intelligence.router, prefix="/intelligence", tags=["market-intelligence"])
+api_router.include_router(market_intelligence.router, prefix="/market-intelligence", tags=["market-intelligence-alias"])
 api_router.include_router(products.router, prefix="/products", tags=["products"])
 api_router.include_router(scraper.router, prefix="/scraper", tags=["scraper"])
 api_router.include_router(marketplace_search.router, prefix="/marketplace-search", tags=["marketplace-search"])

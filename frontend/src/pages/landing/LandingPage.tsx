@@ -1,7 +1,27 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 
 export const LandingPage: React.FC = () => {
+  const navigate = useNavigate();
+  const { loginDemo, isAuthenticated } = useAuth();
+  const [isEnteringDemo, setIsEnteringDemo] = React.useState(false);
+
+  const handleExploreMarket = async () => {
+    try {
+      setIsEnteringDemo(true);
+      if (!isAuthenticated) {
+        await loginDemo();
+      }
+      navigate("/dashboard");
+    } catch (err) {
+      console.error("Failed to enter demo mode", err);
+      navigate("/dashboard");
+    } finally {
+      setIsEnteringDemo(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background font-body-md text-on-surface antialiased overflow-x-hidden">
       {/* Top Header */}
@@ -39,7 +59,16 @@ export const LandingPage: React.FC = () => {
           </nav>
 
 
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={handleExploreMarket}
+              disabled={isEnteringDemo}
+              id="explore-market-header-btn"
+              className="bg-primary/10 border border-primary/40 text-primary hover:bg-primary hover:text-on-primary font-label-caps text-xs px-4 py-2 rounded-full transition-all font-semibold flex items-center gap-1.5 shadow-[0_0_15px_rgba(255,182,141,0.15)] cursor-pointer"
+            >
+              <span className="material-symbols-outlined text-sm">explore</span>
+              {isEnteringDemo ? "Loading..." : "Explore Market"}
+            </button>
             <Link
               to="/login"
               className="text-xs font-label-caps text-on-surface-variant hover:text-primary transition-colors"
@@ -106,19 +135,22 @@ export const LandingPage: React.FC = () => {
             </p>
 
             <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
+              <button
+                onClick={handleExploreMarket}
+                disabled={isEnteringDemo}
+                id="explore-market-btn"
+                className="bg-primary text-on-primary font-label-caps px-8 py-4 rounded-full hover:bg-primary-container hover:text-on-primary-container transition-all shadow-[0_0_30px_rgba(255,182,141,0.35)] flex items-center gap-2 font-semibold text-xs cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-sm">rocket_launch</span>
+                {isEnteringDemo ? "Accessing Live Market..." : "Explore Market"}
+                <span className="material-symbols-outlined text-sm">arrow_forward</span>
+              </button>
               <Link
                 to="/register"
-                className="bg-primary text-on-primary font-label-caps px-8 py-4 rounded-full hover:bg-primary-container hover:text-on-primary-container transition-all shadow-[0_0_30px_rgba(255,182,141,0.3)] flex items-center gap-2 font-semibold text-xs"
-              >
-                Start Free Analysis
-                <span className="material-symbols-outlined text-sm">arrow_forward</span>
-              </Link>
-              <a
-                href="#intelligence"
                 className="bg-surface-container border border-primary/20 text-on-surface font-label-caps px-8 py-4 rounded-full hover:bg-surface-container-high hover:border-primary/40 transition-all text-xs font-semibold"
               >
-                Explore Intelligence
-              </a>
+                Start Free Analysis
+              </Link>
             </div>
           </div>
 

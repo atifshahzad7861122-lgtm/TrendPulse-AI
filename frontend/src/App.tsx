@@ -43,9 +43,27 @@ import { SettingsPage } from "./pages/settings/SettingsPage";
 
 // Route Guard component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, loginDemo } = useAuth();
+  const [initializingDemo, setInitializingDemo] = React.useState(false);
 
-  if (loading) {
+  React.useEffect(() => {
+    // If DEMO_MODE is not disabled (default true for hackathon preview), auto-initialize demo session if unauthenticated
+    const demoModeConfig = import.meta.env.VITE_DEMO_MODE;
+    const isDemoEnabled = demoModeConfig !== "false";
+
+    if (!loading && !isAuthenticated && isDemoEnabled && !initializingDemo) {
+      setInitializingDemo(true);
+      loginDemo()
+        .catch((err) => {
+          console.warn("Direct demo access could not be initialized:", err);
+        })
+        .finally(() => {
+          setInitializingDemo(false);
+        });
+    }
+  }, [loading, isAuthenticated, initializingDemo, loginDemo]);
+
+  if (loading || initializingDemo) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
