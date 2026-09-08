@@ -55,10 +55,16 @@ def get_sync_engine(database_url: Optional[str] = None) -> Optional[Engine]:
         "pool_pre_ping": True,
     }
 
+    import os
+    is_serverless = bool(os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"))
+
     if "sqlite" in sync_url:
         from sqlalchemy.pool import StaticPool
         engine_kwargs["poolclass"] = StaticPool
         engine_kwargs["connect_args"] = {"check_same_thread": False}
+    elif is_serverless:
+        from sqlalchemy.pool import NullPool
+        engine_kwargs["poolclass"] = NullPool
     else:
         engine_kwargs["pool_size"] = settings.DB_POOL_SIZE
         engine_kwargs["max_overflow"] = settings.DB_MAX_OVERFLOW

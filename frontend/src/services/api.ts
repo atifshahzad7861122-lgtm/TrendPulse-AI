@@ -1,6 +1,19 @@
 import type { ApiResponse } from "../types";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
+// Resolve API base URL: prioritize same-origin /api/v1 for production deployments
+const resolveApiBaseUrl = (): string => {
+  const envUrl = import.meta.env.VITE_API_URL;
+  // In production, ignore stale Railway URL and default to same-origin /api/v1
+  if (import.meta.env.PROD) {
+    if (envUrl && !envUrl.includes("railway.app")) {
+      return envUrl;
+    }
+    return "/api/v1";
+  }
+  return envUrl || "http://localhost:8000/api/v1";
+};
+
+const API_BASE_URL = resolveApiBaseUrl();
 
 class ApiClient {
   private getHeaders(customHeaders: HeadersInit = {}): HeadersInit {

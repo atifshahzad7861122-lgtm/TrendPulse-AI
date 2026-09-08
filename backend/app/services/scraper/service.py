@@ -1,3 +1,4 @@
+import os
 import asyncio
 import uuid
 import logging
@@ -128,6 +129,33 @@ class ScraperService:
 
         keywords = req.keywords or ([req.keyword] if req.keyword else [])
         urls = req.urls or ([req.url] if req.url else [])
+
+        # Serverless execution boundary check (e.g. Vercel Functions)
+        is_serverless = bool(os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"))
+        if is_serverless and not req.dry_run:
+            job = ScraperCrawlJob(
+                id=job_id,
+                marketplace=req.marketplace.lower().strip(),
+                trigger_type="manual",
+                keywords=keywords,
+                urls=urls,
+                category_id=req.category,
+                target_count=req.max_products,
+                max_workers=req.max_workers,
+                status="unavailable",
+                error_message="Live browser crawling requires persistent container worker (Railway). Please view existing persisted marketplace products and intelligence.",
+                metadata_json={
+                    "provider": req.provider,
+                    "export_format": req.export_format,
+                    "dry_run": req.dry_run,
+                    "serverless": True
+                },
+                created_at=now,
+                updated_at=now,
+                completed_at=now
+            )
+            self.scraper_repo.create_job(job)
+            return job
 
         job = ScraperCrawlJob(
             id=job_id,

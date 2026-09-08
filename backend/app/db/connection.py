@@ -109,13 +109,19 @@ def get_async_engine(database_url: Optional[str] = None) -> AsyncEngine:
 
     # Only add pool arguments for PostgreSQL (SQLite memory/file doesn't support max_overflow/size)
     if "sqlite" not in async_url:
-        engine_kwargs.update({
-            "pool_size": settings.DB_POOL_SIZE,
-            "max_overflow": settings.DB_MAX_OVERFLOW,
-            "pool_timeout": settings.DB_POOL_TIMEOUT,
-            "pool_recycle": settings.DB_POOL_RECYCLE,
-            "pool_pre_ping": True,
-        })
+        import os
+        is_serverless = bool(os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"))
+        if is_serverless:
+            from sqlalchemy.pool import NullPool
+            engine_kwargs["poolclass"] = NullPool
+        else:
+            engine_kwargs.update({
+                "pool_size": settings.DB_POOL_SIZE,
+                "max_overflow": settings.DB_MAX_OVERFLOW,
+                "pool_timeout": settings.DB_POOL_TIMEOUT,
+                "pool_recycle": settings.DB_POOL_RECYCLE,
+                "pool_pre_ping": True,
+            })
 
     _async_engine = create_async_engine(async_url, **engine_kwargs)
     return _async_engine
